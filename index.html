@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Лес Мишкана</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Creepster&family=VT323&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+  
+  :root {
+    --blood: #8b0000;
+    --dark: #0a0a0a;
+    --fog: #1a2a1a;
+    --green: #2d5a1b;
+    --pale: #c8d8b0;
+    --horror: #ff3030;
+  }
+
+  body {
+    background: var(--dark);
+    overflow: hidden;
+    width: 100vw; height: 100vh;
+    font-family: 'VT323', monospace;
+    color: var(--pale);
+    user-select: none;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+  /* TITLE SCREEN */
+  #screen-title {
+    background: radial-gradient(ellipse at center, #0d1f0d 0%, #000 70%);
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23152b15' fill-opacity='0.4'%3E%3Cpolygon points='50 0 60 30 90 30 67 48 76 80 50 60 24 80 33 48 10 30 40 30'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  #screen-title h1 {
+    font-family: 'Creepster', cursive;
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    color: var(--horror);
+    text-shadow: 0 0 20px #ff000088, 0 0 40px #ff000044;
+    letter-spacing: 4px;
+    animation: flicker 3s infinite;
+    text-align: center;
+    padding: 0 1rem;
+  }
+  #screen-title p {
+    font-size: 1.2rem;
+    color: #6a8a6a;
+    margin: 0.5rem 0 2rem;
+    text-align: center;
+  }
+
+  @keyframes flicker {
+    0%,95%,100% { opacity: 1; }
+    96% { opacity: 0.4; }
+    97% { opacity: 1; }
+    98% { opacity: 0.2; }
+  }
+
+  .btn {
+    background: transparent;
+    border: 2px solid var(--horror);
+    color: var(--pale);
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    padding: 0.7rem 2rem;
+    margin: 0.4rem;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.2s;
+    min-width: 200px;
+    text-align: center;
+  }
+  .btn:hover, .btn:active {
+    background: var(--horror);
+    box-shadow: 0 0 20px var(--horror);
+    transform: scale(1.03);
+  }
+  .btn-green {
+    border-color: #4a8a4a;
+  }
+  .btn-green:hover, .btn-green:active {
+    background: #2d6b2d;
+    box-shadow: 0 0 20px #4a8a4a;
+  }
+
+  input.inp {
+    background: #111;
+    border: 2px solid #3a5a3a;
+    color: var(--pale);
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    padding: 0.6rem 1rem;
+    margin: 0.4rem;
+    width: 220px;
+    text-align: center;
+    outline: none;
+    letter-spacing: 2px;
+  }
+  input.inp:focus { border-color: var(--horror); }
+
+  /* LOBBY */
+  #screen-lobby {
+    background: radial-gradient(ellipse at center, #0d1a0d 0%, #000 80%);
+  }
+  #lobby-code {
+    font-family: 'Creepster', cursive;
+    font-size: 3rem;
+    color: var(--horror);
+    letter-spacing: 8px;
+    text-shadow: 0 0 15px #ff000066;
+    margin: 0.5rem 0;
+  }
+  #lobby-players { width: 90%; max-width: 350px; margin: 1rem 0; }
+  .lobby-player {
+    display: flex; align-items: center;
+    background: #111;
+    border: 1px solid #2a3a2a;
+    padding: 0.5rem 1rem;
+    margin: 0.3rem 0;
+    border-radius: 4px;
+  }
+  .player-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    margin-right: 0.7rem;
+    flex-shrink: 0;
+  }
+  .lobby-player span { font-size: 1.2rem; }
+
+  /* GAME SCREEN */
+  #screen-game {
+    flex-direction: row;
+    align-items: stretch;
+    background: #000;
+  }
+
+  #game-canvas { 
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: block;
+  }
+
+  /* HUD */
+  #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  /* Players top-right */
+  #hud-players {
+    position: absolute; top: 10px; right: 10px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .hud-player {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid #333;
+    border-radius: 20px;
+    padding: 4px 8px;
+    position: relative;
+  }
+  .hud-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    font-family: 'Creepster', cursive;
+    color: #000;
+    font-weight: bold;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .hud-avatar.caught::after {
+    content: '✕';
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.7);
+    border-radius: 50%;
+    color: var(--horror);
+    font-size: 1.1rem;
+    font-weight: bold;
+  }
+  .hud-hp-bar {
+    width: 50px; height: 6px;
+    background: #333; border-radius: 3px; overflow: hidden;
+  }
+  .hud-hp-fill {
+    height: 100%; background: #4a8a4a;
+    transition: width 0.3s;
+    border-radius: 3px;
+  }
+  .hud-name { font-size: 0.8rem; color: #aaa; }
+
+  /* Stamina bottom left */
+  #hud-stamina {
+    position: absolute; bottom: 120px; left: 15px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .bar-label { font-size: 0.85rem; color: #888; letter-spacing: 1px; }
+  .bar-track {
+    width: 100px; height: 8px;
+    background: #222; border-radius: 4px; overflow: hidden;
+    border: 1px solid #333;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 4px;
+    transition: width 0.1s;
+  }
+  #stamina-fill { background: linear-gradient(90deg, #2a6a2a, #5aff5a); }
+  #adrenaline-bar { margin-top: 2px; }
+  #adrenaline-fill { background: linear-gradient(90deg, #aa6600, #ffcc00); }
+
+  /* Pages collected */
+  #hud-pages {
+    position: absolute; bottom: 120px; right: 15px;
+    display: flex; gap: 6px;
+  }
+  .page-icon {
+    width: 22px; height: 28px;
+    border: 2px solid #444;
+    border-radius: 2px;
+    background: #111;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    color: #444;
+    transition: all 0.3s;
+  }
+  .page-icon.collected {
+    border-color: #c8a84a;
+    background: #2a1f0a;
+    color: #c8a84a;
+  }
+
+  /* Bobik messages */
+  #bobik-msg {
+    position: absolute; bottom: 160px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    border: 1px solid #3a5a3a;
+    border-radius: 8px;
+    padding: 8px 14px;
+    max-width: 80vw;
+    font-size: 1rem;
+    color: #ffe08a;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.5s;
+    pointer-events: none;
+  }
+  #bobik-msg.show { opacity: 1; }
+  #bobik-msg::before {
+    content: '🟡 Бобик: ';
+    color: #ffe08a;
+  }
+
+  /* Caught message */
+  #caught-msg {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(139,0,0,0.85);
+    border: 2px solid var(--horror);
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-family: 'Creepster', cursive;
+    font-size: 1.5rem;
+    color: #fff;
+    text-align: center;
+    display: none;
+  }
+  #distance-to-heal { font-size: 1rem; color: #ffaaaa; margin-top: 4px; }
+
+  /* Controls */
+  #controls {
+    position: absolute; bottom: 10px; left: 0; right: 0;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 0 15px;
+    pointer-events: none;
+  }
+  .dpad {
+    display: grid;
+    grid-template-columns: 44px 44px 44px;
+    grid-template-rows: 44px 44px 44px;
+    gap: 3px;
+    pointer-events: all;
+  }
+  .dpad-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.1s;
+  }
+  .dpad-btn:active, .dpad-btn.pressed {
+    background: rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.9);
+  }
+  .dpad-empty { visibility: hidden; }
+
+  .action-btns {
+    display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
+    pointer-events: all;
+  }
+  .action-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    width: 54px; height: 54px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.1s;
+    color: var(--pale);
+    font-family: 'VT323', monospace;
+    letter-spacing: 0;
+  }
+  #btn-interact { border-color: #c8a84a; }
+  #btn-interact:active { background: rgba(200,168,74,0.3); }
+  #btn-sprint { border-color: #4a8a4a; }
+  #btn-sprint:active { background: rgba(74,138,74,0.3); }
+
+  /* Overlays */
+  #overlay-red {
+    position: absolute; inset: 0;
+    background: rgba(139,0,0,0);
+    pointer-events: none;
+    transition: background 0.3s;
+  }
+  #overlay-red.active { background: rgba(139,0,0,0.5); }
+
+  #overlay-tilt {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    transition: transform 0.1s;
+  }
+
+  #overlay-screamer {
+    position: absolute; inset: 0;
+    background: #000;
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  #overlay-screamer.show {
+    display: flex;
+    animation: screamShake 0.5s;
+  }
+  #overlay-screamer img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    filter: saturate(0.3) contrast(1.5);
+  }
+
+  @keyframes screamShake {
+    0%,100% { transform: translate(0,0); }
+    10% { transform: translate(-8px, 6px) rotate(-2deg); }
+    20% { transform: translate(8px, -6px) rotate(2deg); }
+    30% { transform: translate(-6px, 4px) rotate(-1deg); }
+    40% { transform: translate(6px, -4px) rotate(1deg); }
+    50% { transform: translate(-4px, 2px); }
+    60% { transform: translate(4px, -2px); }
+    70% { transform: translate(-2px, 1px); }
+  }
+
+  #overlay-pulse {
+    position: absolute; inset: 0;
+    border: 0px solid rgba(255,0,0,0);
+    pointer-events: none;
+    animation: none;
+  }
+  #overlay-pulse.beating {
+    animation: heartbeat 0.6s ease-in-out infinite;
+    border-color: rgba(255,0,0,0.4);
+  }
+  @keyframes heartbeat {
+    0%,100% { box-shadow: inset 0 0 0 rgba(255,0,0,0); }
+    50% { box-shadow: inset 0 0 40px rgba(255,0,0,0.3); }
+  }
+
+  #screen-shake {
+    position: absolute; inset: 0; pointer-events: none;
+  }
+  .shaking {
+    animation: shake 0.15s infinite !important;
+  }
+  @keyframes shake {
+    0%,100% { transform: translate(0,0); }
+    25% { transform: translate(-4px, 3px); }
+    50% { transform: translate(4px, -3px); }
+    75% { transform: translate(-3px, -4px); }
+  }
+
+  /* Zoom effect */
+  #zoom-flash {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    transition: transform 0.1s;
+    transform-origin: center;
+  }
+
+  /* End screens */
+  #screen-end {
+    background: radial-gradient(ellipse at center, #1a0000 0%, #000 70%);
+    z-index: 200;
+  }
+  #screen-end h1 {
+    font-family: 'Creepster', cursive;
+    font-size: 3rem;
+    color: var(--horror);
+    text-shadow: 0 0 20px #ff000088;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  #screen-end p { color: #888; font-size: 1.2rem; text-align: center; margin-bottom: 1.5rem; }
+
+  /* Minimap (only for debug, hidden in prod) */
+  #minimap { display: none; }
+
+  /* Crosshair */
+  #crosshair {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px; height: 20px;
+    pointer-events: none;
+  }
+  #crosshair::before, #crosshair::after {
+    content: '';
+    position: absolute;
+    background: rgba(255,255,255,0.4);
+    border-radius: 2px;
+  }
+  #crosshair::before { width: 2px; height: 100%; left: 50%; transform: translateX(-50%); }
+  #crosshair::after { width: 100%; height: 2px; top: 50%; transform: translateY(-50%); }
+
+  /* Near item indicator */
+  #near-item {
+    position: absolute; bottom: 175px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(200,168,74,0.15);
+    border: 1px solid #c8a84a;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: 1rem;
+    color: #c8a84a;
+    display: none;
+    pointer-events: none;
+  }
+
+  /* Exit indicator */
+  #exit-indicator {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -200%);
+    background: rgba(74,200,74,0.15);
+    border: 1px solid #4ac84a;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: 1rem;
+    color: #4ac84a;
+    display: none;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- TITLE SCREEN -->
+<div id="screen-title" class="screen active">
+  <h1>ЛЕС<br>МИШКАНА</h1>
+  <p>horror · multiplayer · forest</p>
+  <button class="btn" onclick="showCreate()">СОЗДАТЬ ЛОББИ</button>
+  <button class="btn btn-green" onclick="showJoin()">ВОЙТИ В ЛОББИ</button>
+</div>
+
+<!-- CREATE SCREEN -->
+<div id="screen-create" class="screen">
+  <h2 style="font-family:'Creepster',cursive;font-size:2rem;color:var(--horror);margin-bottom:1rem">СОЗДАТЬ ЛОББИ</h2>
+  <input class="inp" id="inp-create-name" placeholder="ВАШ НИКНЕЙМ" maxlength="12">
+  <button class="btn" onclick="createLobby()">СОЗДАТЬ</button>
+  <button class="btn btn-green" onclick="showScreen('screen-title')" style="margin-top:0.5rem">НАЗАД</button>
+</div>
+
+<!-- JOIN SCREEN -->
+<div id="screen-join" class="screen">
+  <h2 style="font-family:'Creepster',cursive;font-size:2rem;color:var(--horror);margin-bottom:1rem">ВОЙТИ В ЛОББИ</h2>
+  <input class="inp" id="inp-join-name" placeholder="ВАШ НИКНЕЙМ" maxlength="12">
+  <input class="inp" id="inp-join-code" placeholder="КОД ЛОББИ" maxlength="4" style="text-transform:uppercase;letter-spacing:6px">
+  <button class="btn" onclick="joinLobby()">ВОЙТИ</button>
+  <button class="btn btn-green" onclick="showScreen('screen-title')" style="margin-top:0.5rem">НАЗАД</button>
+  <p id="join-error" style="color:var(--horror);font-size:1rem;margin-top:0.5rem"></p>
+</div>
+
+<!-- LOBBY SCREEN -->
+<div id="screen-lobby" class="screen">
+  <h2 style="font-family:'Creepster',cursive;font-size:2rem;color:var(--horror)">ЛОББИ</h2>
+  <p style="color:#666;font-size:1rem;margin-bottom:0.3rem">Код для друзей:</p>
+  <div id="lobby-code">----</div>
+  <p style="color:#666;font-size:0.9rem;margin-bottom:1rem">Поделись кодом в чате</p>
+  <div id="lobby-players"></div>
+  <button class="btn" id="btn-start" onclick="startGame()" style="display:none;margin-top:1rem">НАЧАТЬ ИГРУ</button>
+  <p style="color:#556655;font-size:0.9rem;margin-top:0.5rem" id="lobby-wait-msg">Ожидание хоста...</p>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="screen-game" class="screen">
+  <canvas id="game-canvas"></canvas>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="hud-players"></div>
+
+    <div id="hud-stamina">
+      <span class="bar-label">СТАМИНА</span>
+      <div class="bar-track"><div class="bar-fill" id="stamina-fill" style="width:100%"></div></div>
+      <div id="adrenaline-bar" style="display:none">
+        <span class="bar-label">НАНОДРЕНАЛИН</span>
+        <div class="bar-track"><div class="bar-fill" id="adrenaline-fill" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <div id="hud-pages">
+      <div class="page-icon" id="page-0">📄</div>
+      <div class="page-icon" id="page-1">📄</div>
+      <div class="page-icon" id="page-2">📄</div>
+      <div class="page-icon" id="page-3">📄</div>
+    </div>
+
+    <div id="crosshair"></div>
+    <div id="near-item">[ E ] Взять</div>
+    <div id="exit-indicator">🚪 ВЫХОД — нажми взаимодействие</div>
+    <div id="bobik-msg"></div>
+    <div id="caught-msg">
+      😵 ТЫ ПОЙМАН МИШКАНОМ!<br>
+      <div id="distance-to-heal">Жди помощи...</div>
+    </div>
+  </div>
+
+  <!-- Overlays -->
+  <div id="overlay-red"></div>
+  <div id="overlay-pulse"></div>
+  <div id="zoom-flash"></div>
+
+  <div id="overlay-screamer">
+    <img id="screamer-img" src="https://image2url.com/r2/default/files/1775503421307-9e71057d-b620-4800-9c13-8e055aeefc40.jpg" alt="">
+  </div>
+
+  <!-- Controls -->
+  <div id="controls">
+    <div class="dpad">
+      <div class="dpad-empty"></div>
+      <div class="dpad-btn" id="dpad-up" data-dir="up">▲</div>
+      <div class="dpad-empty"></div>
+      <div class="dpad-btn" id="dpad-left" data-dir="left">◀</div>
+      <div class="dpad-btn" id="dpad-down" data-dir="down">▼</div>
+      <div class="dpad-btn" id="dpad-right" data-dir="right">▶</div>
+      <div class="dpad-empty"></div>
+      <div class="dpad-empty"></div>
+      <div class="dpad-empty"></div>
+    </div>
+    <div class="action-btns">
+      <button class="action-btn" id="btn-interact">E</button>
+      <button class="action-btn" id="btn-sprint">⚡</button>
+    </div>
+  </div>
+</div>
+
+<!-- END SCREEN -->
+<div id="screen-end" class="screen">
+  <h1 id="end-title">ИГРА ОКОНЧЕНА</h1>
+  <p id="end-msg"></p>
+  <button class="btn" onclick="location.reload()">В ГЛАВНОЕ МЕНЮ</button>
+</div>
+
+<script>
+// ============================================================
+//  AUDIO
+// ============================================================
+const AUDIO = {
+  bg: null, zoom: null, scream: null, caught: null
+};
+
+function initAudio() {
+  AUDIO.bg = new Audio('https://image2url.com/r2/default/files/1775502743982-2a4e8ee7-3dfd-4bed-a35e-2fa1db366b96.m4a');
+  AUDIO.bg.loop = true;
+  AUDIO.bg.volume = 0.15;
+
+  AUDIO.zoom = new Audio('https://image2url.com/r2/default/files/1775503673618-4ef1e1d3-066a-4e58-8442-2f4a80b8fc52.mp3');
+  AUDIO.zoom.volume = 0.9;
+
+  AUDIO.scream = new Audio('https://image2url.com/r2/default/files/1775503545113-70bfeb3a-77a6-48ad-8ebe-e2639c1e2b77.mp3');
+  AUDIO.scream.volume = 1.0;
+
+  AUDIO.caught = new Audio('https://image2url.com/r2/default/files/1775503969660-11d003f6-bf69-4148-bb38-965ed4f0808b.mp3');
+  AUDIO.caught.volume = 0.9;
+}
+
+function playAudio(key) {
+  if (!AUDIO[key]) return;
+  AUDIO[key].currentTime = 0;
+  AUDIO[key].play().catch(() => {});
+}
+
+function setBgVolume(v) {
+  if (AUDIO.bg) AUDIO.bg.volume = Math.max(0, Math.min(1, v));
+}
+
+// ============================================================
+//  WEBSOCKET
+// ============================================================
+let ws = null;
+let myId = null;
+let lobbyCode = null;
+let isHost = false;
+
+const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
+
+function connectWS() {
+  return new Promise((resolve, reject) => {
+    ws = new WebSocket(WS_URL);
+    ws.onopen = resolve;
+    ws.onerror = reject;
+    ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
+    ws.onclose = () => {
+      console.log('WS closed');
+    };
+  });
+}
+
+function send(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+}
+
+// ============================================================
+//  SCREENS
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showCreate() { showScreen('screen-create'); }
+function showJoin() { showScreen('screen-join'); }
+
+async function createLobby() {
+  const name = document.getElementById('inp-create-name').value.trim() || 'Игрок 1';
+  await connectWS();
+  initAudio();
+  send({ type: 'create_lobby', name });
+}
+
+async function joinLobby() {
+  const name = document.getElementById('inp-join-name').value.trim() || 'Игрок';
+  const code = document.getElementById('inp-join-code').value.trim().toUpperCase();
+  if (code.length < 4) { document.getElementById('join-error').textContent = 'Введи 4-значный код!'; return; }
+  await connectWS();
+  initAudio();
+  send({ type: 'join_lobby', name, code });
+}
+
+function startGame() {
+  send({ type: 'start_game' });
+}
+
+// ============================================================
+//  LOBBY UI
+// ============================================================
+function updateLobbyUI(players) {
+  const el = document.getElementById('lobby-players');
+  el.innerHTML = '';
+  players.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'lobby-player';
+    div.innerHTML = `<div class="player-dot" style="background:${p.color}"></div><span>${p.name}</span>`;
+    el.appendChild(div);
+  });
+}
+
+// ============================================================
+//  GAME STATE
+// ============================================================
+const G = {
+  map: null,
+  items: [],
+  players: {},
+  mishkan: { x: 20, z: 20, angle: 0 },
+  myPlayer: null,
+  camAngleY: 0,   // horizontal look
+  camAngleX: 0,   // vertical look (tilt)
+  stamina: 100,
+  adrenaline: false,
+  adrenalineTimer: 0,
+  sprinting: false,
+  keys: { up: false, down: false, left: false, right: false },
+  interact: false,
+  caught: false,
+  mishkanInView: false,
+  screenShaking: false,
+  pages: 0,
+  allPagesCollected: false,
+  nearExit: false,
+};
+
+// ============================================================
+//  MESSAGE HANDLER
+// ============================================================
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'lobby_created':
+      myId = msg.playerId;
+      isHost = msg.isHost;
+      lobbyCode = msg.code;
+      document.getElementById('lobby-code').textContent = msg.code;
+      document.getElementById('btn-start').style.display = isHost ? 'block' : 'none';
+      document.getElementById('lobby-wait-msg').textContent = isHost ? 'Жди игроков и нажми НАЧАТЬ' : 'Ожидание хоста...';
+      showScreen('screen-lobby');
+      break;
+
+    case 'joined_lobby':
+      myId = msg.playerId;
+      isHost = msg.isHost;
+      lobbyCode = msg.code;
+      document.getElementById('lobby-code').textContent = msg.code;
+      document.getElementById('btn-start').style.display = 'none';
+      showScreen('screen-lobby');
+      break;
+
+    case 'lobby_update':
+      updateLobbyUI(msg.players);
+      break;
+
+    case 'error':
+      document.getElementById('join-error').textContent = msg.message;
+      break;
+
+    case 'game_start':
+      G.map = msg.map;
+      G.items = msg.items;
+      msg.players.forEach(p => {
+        G.players[p.id] = { ...p, caught: false, hp: 100 };
+      });
+      G.myPlayer = G.players[myId];
+      startGameClient();
+      break;
+
+    case 'game_state':
+      G.mishkan = msg.mishkan;
+      msg.players.forEach(p => {
+        if (G.players[p.id]) {
+          Object.assign(G.players[p.id], p);
+        }
+      });
+      G.items = msg.items;
+      updateHUD();
+      if (G.myPlayer) {
+        const my = G.players[myId];
+        if (my) {
+          G.myPlayer = my;
+          G.caught = my.caught;
+        }
+      }
+      updateMishkanEffects();
+      break;
+
+    case 'player_caught':
+      if (msg.playerId === myId) {
+        G.caught = true;
+        triggerCaught();
+      } else {
+        // Play caught sound for others
+        playAudio('caught');
+        showBobik(`${G.players[msg.playerId]?.name || 'Игрок'} пойман Мишканом! Найди и вылечи его!`);
+      }
+      if (G.players[msg.playerId]) G.players[msg.playerId].caught = true;
+      updateHUD();
+      break;
+
+    case 'player_healed':
+      if (G.players[msg.playerId]) G.players[msg.playerId].caught = false;
+      if (msg.playerId === myId) {
+        G.caught = false;
+        document.getElementById('caught-msg').style.display = 'none';
+        document.getElementById('overlay-red').classList.remove('active');
+        showBobik('Тебя вылечили! Беги!');
+      }
+      updateHUD();
+      break;
+
+    case 'item_collected':
+      G.items.forEach(i => { if (i.id === msg.itemId) i.collected = true; });
+      if (msg.itemType === 'page') {
+        G.pages = G.items.filter(i => i.type === 'page' && i.collected).length;
+        const remaining = 4 - G.pages;
+        if (remaining === 0) {
+          G.allPagesCollected = true;
+          showBobik('ВЫ НАШЛИ ВСЕ СТРАНИЦЫ! Бегите на север к выходу!');
+        } else {
+          showBobik(`Страница найдена! Осталось: ${remaining}`);
+        }
+        updatePagesHUD();
+      }
+      if (msg.itemType === 'energo' && msg.playerId === myId) {
+        G.adrenaline = true;
+        G.adrenalineTimer = 8000;
+        document.getElementById('adrenaline-bar').style.display = 'block';
+        showBobik('НАНОДРЕНАЛИН! Ты летишь как ракета!');
+      }
+      break;
+
+    case 'game_won':
+      showEndScreen(true);
+      break;
+
+    case 'game_lost':
+      showEndScreen(false);
+      break;
+  }
+}
+
+// ============================================================
+//  HUD
+// ============================================================
+function updateHUD() {
+  const container = document.getElementById('hud-players');
+  container.innerHTML = '';
+  Object.values(G.players).forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'hud-player';
+    div.innerHTML = `
+      <div class="hud-avatar ${p.caught ? 'caught' : ''}" style="background:${p.color}">${p.name[0]}</div>
+      <div>
+        <div class="hud-name">${p.name}${p.id === myId ? ' (ты)' : ''}</div>
+        <div class="hud-hp-bar"><div class="hud-hp-fill" style="width:${p.hp || 0}%"></div></div>
+      </div>`;
+    container.appendChild(div);
+  });
+
+  // Distance to caught players (for healers)
+  if (!G.caught && G.myPlayer) {
+    const caughtPlayers = Object.values(G.players).filter(p => p.caught && p.id !== myId);
+    if (caughtPlayers.length > 0) {
+      const nearest = caughtPlayers.reduce((a, b) => {
+        const da = dist2d(G.myPlayer, a);
+        const db = dist2d(G.myPlayer, b);
+        return da < db ? a : b;
+      });
+      const d = dist2d(G.myPlayer, nearest);
+      // Show on caught player's screen handled separately
+    }
+  }
+}
+
+function updatePagesHUD() {
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById(`page-${i}`);
+    const collected = G.items.filter(it => it.type === 'page' && it.collected).length;
+    if (i < collected) el.classList.add('collected');
+  }
+}
+
+function dist2d(a, b) {
+  return Math.sqrt((a.x - b.x) ** 2 + (a.z - b.z) ** 2);
+}
+
+// ============================================================
+//  MISHKAN EFFECTS
+// ============================================================
+let mishkanZoomTimeout = null;
+let lastMishkanInView = false;
+
+function updateMishkanEffects() {
+  if (!G.myPlayer || G.caught) return;
+
+  const distToMishkan = dist2d(G.myPlayer, G.mishkan);
+
+  // Volume scaling
+  const maxDist = 20;
+  const vol = Math.max(0, 1 - distToMishkan / maxDist);
+  setBgVolume(0.05 + vol * 0.7);
+
+  // Heartbeat pulse when close
+  const pulse = document.getElementById('overlay-pulse');
+  if (distToMishkan < 8) {
+    pulse.classList.add('beating');
+    pulse.style.animationDuration = `${Math.max(0.3, 0.8 - (8 - distToMishkan) * 0.06)}s`;
+  } else {
+    pulse.classList.remove('beating');
+  }
+
+  // Check if mishkan in FOV
+  const inView = isMishkanInFOV();
+  if (inView && !lastMishkanInView && !mishkanZoomTimeout) {
+    triggerMishkanSeen();
+  }
+  lastMishkanInView = inView;
+
+  // Screen shake while mishkan close and in view
+  if (inView && distToMishkan < 6) {
+    document.getElementById('game-canvas').classList.add('shaking');
+  } else {
+    document.getElementById('game-canvas').classList.remove('shaking');
+  }
+}
+
+function isMishkanInFOV() {
+  if (!G.myPlayer) return false;
+  const dx = G.mishkan.x - G.myPlayer.x;
+  const dz = G.mishkan.z - G.myPlayer.z;
+  const dist = Math.sqrt(dx * dx + dz * dz);
+  if (dist > 12) return false;
+  const angleToMishkan = Math.atan2(dx, dz);
+  let diff = angleToMishkan - G.camAngleY;
+  while (diff > Math.PI) diff -= 2 * Math.PI;
+  while (diff < -Math.PI) diff += 2 * Math.PI;
+  return Math.abs(diff) < 0.6; // ~35 deg FOV check
+}
+
+function triggerMishkanSeen() {
+  mishkanZoomTimeout = setTimeout(() => { mishkanZoomTimeout = null; }, 3000);
+  // Zoom flash
+  const canvas = document.getElementById('game-canvas');
+  canvas.style.transform = 'scale(1.15)';
+  canvas.style.transition = 'transform 0.15s';
+  playAudio('zoom');
+  setTimeout(() => {
+    canvas.style.transform = 'scale(1)';
+  }, 800);
+}
+
+function triggerCaught() {
+  G.caught = true;
+  document.getElementById('overlay-red').classList.add('active');
+  document.getElementById('caught-msg').style.display = 'block';
+
+  // Screamer
+  const screamer = document.getElementById('overlay-screamer');
+  screamer.classList.add('show');
+  playAudio('scream');
+  setTimeout(() => screamer.classList.remove('show'), 1500);
+
+  // Tilt camera
+  G.camAngleX = 1.2; // tilted
+}
+
+// ============================================================
+//  BOBIK MESSAGES
+// ============================================================
+let bobikTimeout = null;
+const BOBIK_MSGS = [
+  'Тихо-тихо... я его чувствую. Где-то близко...',
+  'Мишкан не злой. Просто одинокий. Но лучше не попадайтесь!',
+  'Страницы светятся в темноте. Ищите!',
+  'Если найдёте энергос — выпейте! Поможет убежать.',
+  'Вы не одни. Держитесь вместе!',
+];
+
+function showBobik(msg) {
+  const el = document.getElementById('bobik-msg');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(bobikTimeout);
+  bobikTimeout = setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+// ============================================================
+//  TOUCH / SWIPE CAMERA CONTROL
+// ============================================================
+let touchStartX = 0, touchStartY = 0;
+let lastTouchX = 0, lastTouchY = 0;
+let isTouching = false;
+const LOOK_SENSITIVITY = 0.006;
+
+function initTouchControls() {
+  const canvas = document.getElementById('game-canvas');
+  canvas.addEventListener('touchstart', (e) => {
+    // Only handle touches not on buttons
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    lastTouchX = touch.clientX;
+    lastTouchY = touch.clientY;
+    isTouching = true;
+  }, { passive: true });
+
+  canvas.addEventListener('touchmove', (e) => {
+    if (!isTouching) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - lastTouchX;
+    const dy = touch.clientY - lastTouchY;
+    lastTouchX = touch.clientX;
+    lastTouchY = touch.clientY;
+    G.camAngleY += dx * LOOK_SENSITIVITY;
+    if (!G.caught) {
+      G.camAngleX = Math.max(-0.3, Math.min(0.3, G.camAngleX + dy * LOOK_SENSITIVITY * 0.5));
+    }
+  }, { passive: true });
+
+  canvas.addEventListener('touchend', () => { isTouching = false; });
+}
+
+function initDpad() {
+  const btns = document.querySelectorAll('.dpad-btn');
+  btns.forEach(btn => {
+    const dir = btn.dataset.dir;
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); G.keys[dir] = true; btn.classList.add('pressed'); }, { passive: false });
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); G.keys[dir] = false; btn.classList.remove('pressed'); }, { passive: false });
+  });
+
+  document.getElementById('btn-interact').addEventListener('touchstart', (e) => { e.preventDefault(); G.interact = true; }, { passive: false });
+  document.getElementById('btn-interact').addEventListener('touchend', (e) => { e.preventDefault(); G.interact = false; }, { passive: false });
+
+  document.getElementById('btn-sprint').addEventListener('touchstart', (e) => { e.preventDefault(); G.sprinting = true; }, { passive: false });
+  document.getElementById('btn-sprint').addEventListener('touchend', (e) => { e.preventDefault(); G.sprinting = false; }, { passive: false });
+
+  // Keyboard for desktop testing
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp' || e.key === 'w') G.keys.up = true;
+    if (e.key === 'ArrowDown' || e.key === 's') G.keys.down = true;
+    if (e.key === 'ArrowLeft' || e.key === 'a') G.keys.left = true;
+    if (e.key === 'ArrowRight' || e.key === 'd') G.keys.right = true;
+    if (e.key === 'e' || e.key === 'E') G.interact = true;
+    if (e.key === 'Shift') G.sprinting = true;
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowUp' || e.key === 'w') G.keys.up = false;
+    if (e.key === 'ArrowDown' || e.key === 's') G.keys.down = false;
+    if (e.key === 'ArrowLeft' || e.key === 'a') G.keys.left = false;
+    if (e.key === 'ArrowRight' || e.key === 'd') G.keys.right = false;
+    if (e.key === 'e' || e.key === 'E') G.interact = false;
+    if (e.key === 'Shift') G.sprinting = false;
+  });
+}
+
+// ============================================================
+//  RAYCASTER 3D ENGINE
+// ============================================================
+const RC = {
+  canvas: null, ctx: null,
+  W: 0, H: 0,
+  FOV: Math.PI / 3,
+  MAX_DEPTH: 20,
+  // Sprite distances for sprites
+  sprites: [],
+};
+
+function initRaycaster() {
+  RC.canvas = document.getElementById('game-canvas');
+  RC.ctx = RC.canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+}
+
+function resizeCanvas() {
+  RC.W = window.innerWidth;
+  RC.H = window.innerHeight;
+  RC.canvas.width = RC.W;
+  RC.canvas.height = RC.H;
+}
+
+function renderFrame() {
+  if (!G.map || !G.myPlayer) return;
+  const ctx = RC.ctx;
+  const W = RC.W, H = RC.H;
+  const player = G.myPlayer;
+  const px = player.x, pz = player.z;
+  const angle = G.camAngleY;
+  const tilt = G.camAngleX;
+
+  // Sky (dark horror green-black gradient)
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, H / 2);
+  skyGrad.addColorStop(0, '#020a02');
+  skyGrad.addColorStop(1, '#0d1a0d');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, H / 2);
+
+  // Ground
+  const groundGrad = ctx.createLinearGradient(0, H / 2, 0, H);
+  groundGrad.addColorStop(0, '#0a120a');
+  groundGrad.addColorStop(1, '#050a05');
+  ctx.fillStyle = groundGrad;
+  ctx.fillRect(0, H / 2, W, H / 2);
+
+  // Stars / noise in sky
+  ctx.fillStyle = 'rgba(200,220,200,0.3)';
+  for (let i = 0; i < 30; i++) {
+    const sx = ((i * 137 + Math.floor(angle * 10)) * 73) % W;
+    const sy = (i * 53) % (H * 0.4);
+    ctx.fillRect(sx, sy, 1, 1);
+  }
+
+  const halfFOV = RC.FOV / 2;
+  const numRays = Math.floor(W / 2); // lower res for perf
+  const rayStep = RC.FOV / numRays;
+  const zBuffer = new Float32Array(numRays);
+
+  const tiltOffset = tilt * H * 0.5;
+  const horizon = H / 2 + tiltOffset;
+
+  for (let col = 0; col < numRays; col++) {
+    const rayAngle = angle - halfFOV + col * rayStep;
+    const cosA = Math.cos(rayAngle);
+    const sinA = Math.sin(rayAngle);
+
+    let dist = 0;
+    let hit = false;
+    let mapX, mapZ;
+
+    // DDA
+    const stepSize = 0.05;
+    for (let d = 0; d < RC.MAX_DEPTH; d += stepSize) {
+      const tx = px + sinA * d;
+      const tz = pz + cosA * d;
+      mapX = Math.floor(tx);
+      mapZ = Math.floor(tz);
+      if (mapZ < 0 || mapZ >= 40 || mapX < 0 || mapX >= 40) { dist = RC.MAX_DEPTH; break; }
+      if (G.map[mapZ][mapX] === 1) {
+        dist = d;
+        hit = true;
+        break;
+      }
+    }
+    if (!hit) dist = RC.MAX_DEPTH;
+
+    zBuffer[col] = dist;
+
+    // Fix fisheye
+    const corrDist = dist * Math.cos(rayAngle - angle);
+    const wallH = Math.min(H * 2, H / corrDist);
+    const wallTop = horizon - wallH / 2;
+    const wallBot = horizon + wallH / 2;
+
+    // Wall shading (fog)
+    const shade = Math.max(0, 1 - dist / RC.MAX_DEPTH);
+    const r = Math.floor(20 * shade);
+    const g = Math.floor(55 * shade);
+    const b = Math.floor(20 * shade);
+
+    // Bark texture approximation
+    const texX = (mapX + mapZ) * 3;
+    const variation = ((texX * 7 + col * 3) % 20 - 10) * 0.01;
+    const rr = Math.max(0, Math.min(255, r + r * variation));
+    const gg = Math.max(0, Math.min(255, g + g * variation * 0.5));
+    const bb = Math.max(0, Math.min(255, b + b * variation));
+
+    ctx.fillStyle = `rgb(${rr},${gg},${bb})`;
+    ctx.fillRect(col * 2, wallTop, 2, wallH);
+  }
+
+  // ---- SPRITES (other players + mishkan + items) ----
+  RC.sprites = [];
+
+  // Other players
+  Object.values(G.players).forEach(p => {
+    if (p.id === myId) return;
+    RC.sprites.push({ x: p.x, z: p.z, type: 'player', data: p });
+  });
+
+  // Mishkan
+  RC.sprites.push({ x: G.mishkan.x, z: G.mishkan.z, type: 'mishkan', data: G.mishkan });
+
+  // Items
+  G.items.forEach(item => {
+    if (!item.collected) {
+      RC.sprites.push({ x: item.x, z: item.z, type: item.type, data: item });
+    }
+  });
+
+  // Sort sprites by distance (farthest first)
+  RC.sprites.forEach(s => {
+    s.dist = Math.sqrt((s.x - px) ** 2 + (s.z - pz) ** 2);
+  });
+  RC.sprites.sort((a, b) => b.dist - a.dist);
+
+  RC.sprites.forEach(sprite => {
+    if (sprite.dist < 0.3 || sprite.dist > 18) return;
+
+    const dx = sprite.x - px;
+    const dz = sprite.z - pz;
+    const spriteAngle = Math.atan2(dx, dz);
+    let angleDiff = spriteAngle - angle;
+    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+    if (Math.abs(angleDiff) > RC.FOV * 0.6) return;
+
+    const corrDist = sprite.dist * Math.cos(angleDiff);
+    const spriteH = Math.min(H * 1.5, H / corrDist * 0.9);
+    const screenX = W / 2 + (angleDiff / halfFOV) * (W / 2) - spriteH / 2;
+    const screenY = horizon - spriteH / 2;
+
+    const shade = Math.max(0.1, 1 - sprite.dist / 18);
+
+    if (sprite.type === 'mishkan') {
+      // Draw Mishkan - eerie dark silhouette with eyes
+      const sw = spriteH * 0.6;
+      const sh = spriteH;
+      const sx = screenX + (spriteH - sw) / 2;
+
+      ctx.save();
+      ctx.globalAlpha = shade * 0.9;
+
+      // Body
+      const bodyGrad = ctx.createLinearGradient(sx, screenY, sx, screenY + sh);
+      bodyGrad.addColorStop(0, '#1a0a00');
+      bodyGrad.addColorStop(0.4, '#2a1000');
+      bodyGrad.addColorStop(1, '#050200');
+      ctx.fillStyle = bodyGrad;
+      ctx.beginPath();
+      ctx.ellipse(sx + sw / 2, screenY + sh * 0.5, sw / 2, sh / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pores (sponge texture)
+      ctx.fillStyle = 'rgba(40,20,0,0.6)';
+      for (let i = 0; i < 12; i++) {
+        const px2 = sx + (i % 4) * (sw / 4) + sw * 0.05;
+        const py2 = screenY + Math.floor(i / 4) * (sh / 3) + sh * 0.15;
+        ctx.beginPath();
+        ctx.arc(px2, py2, sw * 0.05, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Eyes (glowing)
+      const eyeY = screenY + sh * 0.3;
+      const eyeSize = sw * 0.12;
+      ctx.fillStyle = '#ff2200';
+      ctx.shadowColor = '#ff0000';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(sx + sw * 0.3, eyeY, eyeSize, 0, Math.PI * 2);
+      ctx.arc(sx + sw * 0.7, eyeY, eyeSize, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Arms
+      ctx.strokeStyle = '#1a0800';
+      ctx.lineWidth = sw * 0.12;
+      ctx.lineCap = 'round';
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.moveTo(sx, screenY + sh * 0.4);
+      ctx.lineTo(sx - sw * 0.4, screenY + sh * 0.7);
+      ctx.moveTo(sx + sw, screenY + sh * 0.4);
+      ctx.lineTo(sx + sw * 1.4, screenY + sh * 0.7);
+      ctx.stroke();
+
+      ctx.restore();
+
+    } else if (sprite.type === 'player') {
+      const p = sprite.data;
+      const sw = spriteH * 0.5;
+      const sx = screenX + (spriteH - sw) / 2;
+
+      ctx.save();
+      ctx.globalAlpha = shade * 0.85;
+
+      // Player silhouette
+      ctx.fillStyle = p.caught ? '#660000' : p.color;
+      ctx.beginPath();
+      // Head
+      ctx.arc(sx + sw / 2, screenY + spriteH * 0.15, sw * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      // Body
+      ctx.fillRect(sx + sw * 0.25, screenY + spriteH * 0.3, sw * 0.5, spriteH * 0.35);
+      // Legs
+      ctx.fillRect(sx + sw * 0.25, screenY + spriteH * 0.65, sw * 0.2, spriteH * 0.3);
+      ctx.fillRect(sx + sw * 0.55, screenY + spriteH * 0.65, sw * 0.2, spriteH * 0.3);
+
+      // Name tag
+      if (sprite.dist < 6) {
+        ctx.globalAlpha = Math.min(1, shade * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(sx - 2, screenY - 16, sw + 4, 14);
+        ctx.fillStyle = p.color;
+        ctx.font = `${Math.max(8, 10 / corrDist * 4)}px VT323`;
+        ctx.textAlign = 'center';
+        ctx.fillText(p.name, sx + sw / 2, screenY - 5);
+      }
+
+      ctx.restore();
+
+    } else if (sprite.type === 'page') {
+      const sw = spriteH * 0.4;
+      const sx = screenX + (spriteH - sw) / 2;
+      const glow = (Math.sin(Date.now() * 0.003) + 1) / 2;
+
+      ctx.save();
+      ctx.globalAlpha = shade * (0.7 + glow * 0.3);
+      ctx.shadowColor = '#c8a84a';
+      ctx.shadowBlur = 8 + glow * 8;
+      ctx.fillStyle = '#c8a84a';
+      ctx.fillRect(sx, screenY + spriteH * 0.2, sw, spriteH * 0.6);
+      ctx.fillStyle = '#8a6a2a';
+      for (let l = 0; l < 4; l++) {
+        ctx.fillRect(sx + sw * 0.1, screenY + spriteH * (0.3 + l * 0.1), sw * 0.8, 1);
+      }
+      ctx.restore();
+
+    } else if (sprite.type === 'energo') {
+      const sw = spriteH * 0.3;
+      const sx = screenX + (spriteH - sw) / 2;
+      const glow = (Math.sin(Date.now() * 0.005) + 1) / 2;
+
+      ctx.save();
+      ctx.globalAlpha = shade * (0.8 + glow * 0.2);
+      ctx.shadowColor = '#00ffcc';
+      ctx.shadowBlur = 10 + glow * 10;
+
+      // Can shape
+      ctx.fillStyle = '#004433';
+      ctx.fillRect(sx, screenY + spriteH * 0.3, sw, spriteH * 0.5);
+      ctx.fillStyle = '#00ffcc';
+      ctx.fillRect(sx, screenY + spriteH * 0.3, sw, spriteH * 0.06);
+      ctx.fillRect(sx, screenY + spriteH * 0.74, sw, spriteH * 0.06);
+      ctx.font = `bold ${Math.max(6, sw * 0.4)}px VT323`;
+      ctx.fillStyle = '#00ffcc';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚡', sx + sw / 2, screenY + spriteH * 0.62);
+      ctx.restore();
+    }
+  });
+
+  // Fog overlay
+  const fogDist = 0.7;
+  const fogGrad = ctx.createLinearGradient(0, 0, W, 0);
+  fogGrad.addColorStop(0, 'rgba(5,15,5,0.4)');
+  fogGrad.addColorStop(0.5, 'rgba(0,0,0,0)');
+  fogGrad.addColorStop(1, 'rgba(5,15,5,0.4)');
+  ctx.fillStyle = fogGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Vignette
+  const vig = ctx.createRadialGradient(W/2, H/2, H*0.3, W/2, H/2, H*0.8);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.65)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+
+  // Exit marker if all pages collected
+  if (G.allPagesCollected) {
+    const dx = 20.5 - px;
+    const dz = 1.5 - pz;
+    const exitAngle = Math.atan2(dx, dz);
+    let diff = exitAngle - angle;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    if (Math.abs(diff) < 0.15) {
+      ctx.fillStyle = 'rgba(74,200,74,0.2)';
+      ctx.fillRect(W/2 - 30, 0, 60, H/2);
+    }
+    // Arrow pointing to exit
+    const arrowX = W / 2 + (diff / halfFOV) * W / 2;
+    ctx.fillStyle = '#4ac84a';
+    ctx.font = '24px VT323';
+    ctx.textAlign = 'center';
+    ctx.fillText('↑ ВЫХОД', Math.max(40, Math.min(W-40, arrowX)), 40);
+  }
+}
+
+// ============================================================
+//  MOVEMENT + GAME LOOP
+// ============================================================
+let lastTime = 0;
+let lastServerSend = 0;
+let bobikTimer = 0;
+
+function startGameClient() {
+  showScreen('screen-game');
+  initRaycaster();
+  initTouchControls();
+  initDpad();
+  AUDIO.bg?.play().catch(() => {});
+  showBobik('Привет... я Бобик. Мишкан где-то здесь. Будь осторожен!');
+  requestAnimationFrame(gameLoop);
+}
+
+function gameLoop(ts) {
+  requestAnimationFrame(gameLoop);
+  const dt = Math.min((ts - lastTime) / 1000, 0.05);
+  lastTime = ts;
+
+  if (!G.myPlayer || !G.map) return;
+
+  // Movement
+  if (!G.caught) {
+    const baseSpeed = G.adrenaline ? 7.0 : (G.sprinting && G.stamina > 0 ? 4.5 : 2.8);
+    const speed = baseSpeed * dt;
+
+    const fx = Math.sin(G.camAngleY);
+    const fz = Math.cos(G.camAngleY);
+    const rx = Math.sin(G.camAngleY + Math.PI / 2);
+    const rz = Math.cos(G.camAngleY + Math.PI / 2);
+
+    let mx = 0, mz = 0;
+    if (G.keys.up)    { mx += fx; mz += fz; }
+    if (G.keys.down)  { mx -= fx; mz -= fz; }
+    if (G.keys.left)  { G.camAngleY -= 1.5 * dt; }
+    if (G.keys.right) { G.camAngleY += 1.5 * dt; }
+
+    if (mx !== 0 || mz !== 0) {
+      const len = Math.sqrt(mx*mx + mz*mz);
+      const newX = G.myPlayer.x + (mx/len) * speed;
+      const newZ = G.myPlayer.z + (mz/len) * speed;
+      const mapX = Math.floor(newX);
+      const mapZ = Math.floor(newZ);
+      if (G.map[Math.floor(G.myPlayer.z)] && G.map[Math.floor(G.myPlayer.z)][mapX] !== 1) G.myPlayer.x = newX;
+      if (G.map[mapZ] && G.map[mapZ][Math.floor(G.myPlayer.x)] !== 1) G.myPlayer.z = newZ;
+    }
+
+    // Stamina
+    if (G.sprinting && (G.keys.up || G.keys.down)) {
+      G.stamina = Math.max(0, G.stamina - 20 * dt);
+    } else {
+      G.stamina = Math.min(100, G.stamina + 10 * dt);
+    }
+    document.getElementById('stamina-fill').style.width = G.stamina + '%';
+
+    // Adrenaline timer
+    if (G.adrenaline) {
+      G.adrenalineTimer -= dt * 1000;
+      document.getElementById('adrenaline-fill').style.width = Math.max(0, G.adrenalineTimer / 80) + '%';
+      if (G.adrenalineTimer <= 0) {
+        G.adrenaline = false;
+        document.getElementById('adrenaline-bar').style.display = 'none';
+      }
+    }
+
+    // Check near items
+    let nearItem = false;
+    let nearItemData = null;
+    G.items.forEach(item => {
+      if (!item.collected && dist2d(G.myPlayer, item) < 1.2) {
+        nearItem = true;
+        nearItemData = item;
+      }
+    });
+    document.getElementById('near-item').style.display = nearItem ? 'block' : 'none';
+    if (nearItem) {
+      document.getElementById('near-item').textContent = nearItemData.type === 'page' ? '[ E ] Взять страницу' : '[ E ] Выпить энергос';
+    }
+
+    // Check near exit
+    const distToExit = dist2d(G.myPlayer, { x: 20.5, z: 1.5 });
+    G.nearExit = G.allPagesCollected && distToExit < 2.5;
+    document.getElementById('exit-indicator').style.display = G.nearExit ? 'block' : 'none';
+    if (G.nearExit && G.interact) {
+      // Trigger exit — server will handle win
+    }
+
+    // Check heal
+    if (G.interact) {
+      Object.values(G.players).forEach(p => {
+        if (p.caught && p.id !== myId && dist2d(G.myPlayer, p) < 2) {
+          send({ type: 'heal_player', targetId: p.id });
+        }
+      });
+    }
+
+    // Distance to caught players
+    const caughtPlayers = Object.values(G.players).filter(p => p.caught && p.id !== myId);
+    if (caughtPlayers.length > 0) {
+      const nearest = caughtPlayers.reduce((a, b) => dist2d(G.myPlayer, a) < dist2d(G.myPlayer, b) ? a : b);
+      const d = dist2d(G.myPlayer, nearest);
+    }
+  } else {
+    // Caught — show distance to nearest free player
+    const freePlayers = Object.values(G.players).filter(p => !p.caught && p.id !== myId);
+    if (freePlayers.length > 0) {
+      const nearest = freePlayers.reduce((a, b) => dist2d(G.myPlayer, a) < dist2d(G.myPlayer, b) ? a : b);
+      const d = dist2d(G.myPlayer, nearest);
+      document.getElementById('distance-to-heal').textContent = `До спасения: ${Math.round(d)} м — ${nearest.name}`;
+    }
+  }
+
+  // Send movement to server
+  if (ts - lastServerSend > 50) {
+    lastServerSend = ts;
+    send({
+      type: 'player_move',
+      x: G.myPlayer.x,
+      z: G.myPlayer.z,
+      angle: G.camAngleY,
+      sprint: G.sprinting,
+      interact: G.interact
+    });
+    G.interact = false; // single-frame interact
+  }
+
+  // Bobik random tips
+  bobikTimer -= dt;
+  if (bobikTimer <= 0) {
+    bobikTimer = 25 + Math.random() * 20;
+    if (Math.random() < 0.3) {
+      showBobik(BOBIK_MSGS[Math.floor(Math.random() * BOBIK_MSGS.length)]);
+    }
+  }
+
+  renderFrame();
+}
+
+// ============================================================
+//  END SCREEN
+// ============================================================
+function showEndScreen(won) {
+  AUDIO.bg && (AUDIO.bg.pause());
+  const title = document.getElementById('end-title');
+  const msg = document.getElementById('end-msg');
+  if (won) {
+    title.textContent = 'ВЫ ВЫБРАЛИСЬ!';
+    title.style.color = '#4ac84a';
+    msg.textContent = 'Бобик счастлив. Приходите ещё... только не ночью.';
+  } else {
+    title.textContent = 'МИШКАН ПОБЕДИЛ';
+    title.style.color = 'var(--horror)';
+    msg.textContent = 'Мишкан поймал всех. Бобик грустит.';
+  }
+  showScreen('screen-end');
+}
+</script>
+</body>
+</html>
