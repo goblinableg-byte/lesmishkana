@@ -498,9 +498,7 @@ function makeExit(){
 }
 
 function buildWorld(){
-  if(!G.map) return;
-  // Clear existing
-  while(scene.children.length>0) scene.remove(scene.children[0]);
+  if(!G.map||!scene) return;
   OBJ.itemMeshes={}; OBJ.playerMeshes={}; OBJ.mishkanMesh=null;
 
   // Re-add lights & environment
@@ -745,14 +743,21 @@ function initControls(){
 // ══════════════════════════════════════════
 let lastSend=0,bobikTimer=30;
 
+let loopRunning=false;
 function startGameClient(){
   showScreen('screen-game');
   initThree();
   buildWorld();
+  // Set camera to player start position AFTER buildWorld
+  if(G.myPlayer){
+    camera.position.set(G.myPlayer.x,.92,G.myPlayer.z);
+  }
+  camera.rotation.order='YXZ';
+  camera.rotation.set(0,0,0);
   initControls();
   AUDIO.bg?.play().catch(()=>{});
   showBobik('Привет... я Бобик. Мишкан где-то здесь. Будь осторожен!');
-  requestAnimationFrame(loop);
+  if(!loopRunning){ loopRunning=true; requestAnimationFrame(loop); }
 }
 
 function loop(){
