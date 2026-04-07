@@ -501,18 +501,7 @@ function buildWorld(){
   if(!G.map||!scene) return;
   OBJ.itemMeshes={}; OBJ.playerMeshes={}; OBJ.mishkanMesh=null;
 
-  // Re-add lights & environment
-  scene.add(new THREE.AmbientLight(0x1a3a18,1.4));
-  const moon=new THREE.DirectionalLight(0x4a6a9a,.9);
-  moon.position.set(15,25,10); moon.castShadow=true;
-  moon.shadow.mapSize.width=2048; moon.shadow.mapSize.height=2048;
-  moon.shadow.camera.near=1; moon.shadow.camera.far=70;
-  moon.shadow.camera.left=-35; moon.shadow.camera.right=35;
-  moon.shadow.camera.top=35; moon.shadow.camera.bottom=-35;
-  scene.add(moon);
-  scene.add(new THREE.HemisphereLight(0x0a2208,0x050a03,.5));
-
-  // Ground
+  // Ground (lights already added in initThree)
   const gGeo=new THREE.PlaneGeometry(42,42,30,30);
   const gPos=gGeo.attributes.position;
   for(let i=0;i<gPos.count;i++) gPos.setZ(i,(Math.random()-.5)*.12);
@@ -757,6 +746,8 @@ function startGameClient(){
   initControls();
   AUDIO.bg?.play().catch(()=>{});
   showBobik('Привет... я Бобик. Мишкан где-то здесь. Будь осторожен!');
+  // ✅ ФИКС: сбрасываем флаг чтобы loop всегда запускался заново
+  loopRunning=false;
   if(!loopRunning){ loopRunning=true; requestAnimationFrame(loop); }
 }
 
