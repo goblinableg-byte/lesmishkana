@@ -6,7 +6,7 @@
 <title>Лес Мишкана</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Creepster&family=VT323&display=swap');
-*{margin:0;padding:0;box-sizing:border-box;touch-action:none;}
+*{margin:0;padding:0;box-sizing:border-box;}
 :root{--blood:#8b0000;--dark:#0a0a0a;--pale:#c8d8b0;--horror:#ff3030;}
 body{background:#000;overflow:hidden;width:100vw;height:100vh;font-family:'VT323',monospace;color:var(--pale);user-select:none;}
 .screen{display:none;width:100%;height:100%;position:absolute;top:0;left:0;}
@@ -26,9 +26,10 @@ input.inp:focus{border-color:var(--horror);}
 #lobby-players{width:90%;max-width:350px;margin:1rem 0;}
 .lobby-player{display:flex;align-items:center;background:#111;border:1px solid #2a3a2a;padding:.5rem 1rem;margin:.3rem 0;border-radius:4px;}
 .player-dot{width:14px;height:14px;border-radius:50%;margin-right:.7rem;flex-shrink:0;}
-#screen-game{background:#000;}
-#three-canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
-#hud{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
+#screen-game{background:#000;display:none;}
+#screen-game.active{display:block !important;}
+#three-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;display:block;touch-action:none;}
+#hud{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:10;}
 #hud-players{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:6px;}
 .hud-player{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.65);border:1px solid #2a2a2a;border-radius:20px;padding:4px 8px;}
 .hud-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-family:'Creepster',cursive;color:#000;font-weight:bold;flex-shrink:0;position:relative;}
@@ -49,9 +50,9 @@ input.inp:focus{border-color:var(--horror);}
 #bobik-msg{position:absolute;bottom:175px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.82);border:1px solid #3a5a3a;border-radius:8px;padding:8px 14px;max-width:82vw;font-size:1rem;color:#ffe08a;text-align:center;opacity:0;transition:opacity .5s;pointer-events:none;}
 #bobik-msg.show{opacity:1;}
 #bobik-msg::before{content:'🟡 Бобик: ';}
-#caught-msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(139,0,0,.88);border:2px solid var(--horror);border-radius:8px;padding:12px 20px;font-family:'Creepster',cursive;font-size:1.5rem;color:#fff;text-align:center;display:none;}
+#caught-msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(139,0,0,.88);border:2px solid var(--horror);border-radius:8px;padding:12px 20px;font-family:'Creepster',cursive;font-size:1.5rem;color:#fff;text-align:center;display:none;}
 #distance-to-heal{font-size:1rem;color:#ffaaaa;margin-top:4px;}
-#controls{position:absolute;bottom:10px;left:0;right:0;display:flex;align-items:flex-end;justify-content:space-between;padding:0 15px;pointer-events:none;}
+#controls{position:fixed;bottom:10px;z-index:11;left:0;right:0;display:flex;align-items:flex-end;justify-content:space-between;padding:0 15px;pointer-events:none;}
 .dpad{display:grid;grid-template-columns:52px 52px 52px;grid-template-rows:52px 52px 52px;gap:4px;pointer-events:all;}
 .dpad-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;color:rgba(255,255,255,.55);cursor:pointer;-webkit-tap-highlight-color:transparent;}
 .dpad-btn:active,.dpad-btn.pressed{background:rgba(255,255,255,.22);color:#fff;}
@@ -62,12 +63,12 @@ input.inp:focus{border-color:var(--horror);}
 #btn-interact:active{background:rgba(200,168,74,.3);}
 #btn-sprint{border-color:#4a8a4a;}
 #btn-sprint:active{background:rgba(74,138,74,.3);}
-#overlay-red{position:absolute;inset:0;background:rgba(139,0,0,0);pointer-events:none;transition:background .3s;}
+#overlay-red{position:fixed;inset:0;background:rgba(139,0,0,0);pointer-events:none;transition:background .3s;}
 #overlay-red.active{background:rgba(139,0,0,.5);}
-#overlay-pulse{position:absolute;inset:0;pointer-events:none;}
+#overlay-pulse{position:fixed;inset:0;pointer-events:none;}
 #overlay-pulse.beating{animation:heartbeat .6s ease-in-out infinite;}
 @keyframes heartbeat{0%,100%{box-shadow:inset 0 0 0 rgba(255,0,0,0);}50%{box-shadow:inset 0 0 50px rgba(255,0,0,.35);}}
-#overlay-screamer{position:absolute;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:100;}
+#overlay-screamer{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:100;}
 #overlay-screamer.show{display:flex;animation:screamShake .5s;}
 #overlay-screamer img{width:100%;height:100%;object-fit:cover;filter:saturate(.3) contrast(1.5);}
 @keyframes screamShake{0%,100%{transform:translate(0,0);}10%{transform:translate(-8px,6px) rotate(-2deg);}20%{transform:translate(8px,-6px) rotate(2deg);}40%{transform:translate(6px,-3px);}60%{transform:translate(-4px,2px);}80%{transform:translate(2px,-1px);}}
@@ -501,7 +502,18 @@ function buildWorld(){
   if(!G.map||!scene) return;
   OBJ.itemMeshes={}; OBJ.playerMeshes={}; OBJ.mishkanMesh=null;
 
-  // Ground (lights already added in initThree)
+  // Re-add lights & environment
+  scene.add(new THREE.AmbientLight(0x1a3a18,1.4));
+  const moon=new THREE.DirectionalLight(0x4a6a9a,.9);
+  moon.position.set(15,25,10); moon.castShadow=true;
+  moon.shadow.mapSize.width=2048; moon.shadow.mapSize.height=2048;
+  moon.shadow.camera.near=1; moon.shadow.camera.far=70;
+  moon.shadow.camera.left=-35; moon.shadow.camera.right=35;
+  moon.shadow.camera.top=35; moon.shadow.camera.bottom=-35;
+  scene.add(moon);
+  scene.add(new THREE.HemisphereLight(0x0a2208,0x050a03,.5));
+
+  // Ground
   const gGeo=new THREE.PlaneGeometry(42,42,30,30);
   const gPos=gGeo.attributes.position;
   for(let i=0;i<gPos.count;i++) gPos.setZ(i,(Math.random()-.5)*.12);
@@ -735,24 +747,32 @@ let lastSend=0,bobikTimer=30;
 let loopRunning=false;
 function startGameClient(){
   showScreen('screen-game');
-  initThree();
-  buildWorld();
-  // Set camera to player start position AFTER buildWorld
-  if(G.myPlayer){
-    camera.position.set(G.myPlayer.x,.92,G.myPlayer.z);
-  }
-  camera.rotation.order='YXZ';
-  camera.rotation.set(0,0,0);
-  initControls();
-  AUDIO.bg?.play().catch(()=>{});
-  showBobik('Привет... я Бобик. Мишкан где-то здесь. Будь осторожен!');
-  // ✅ ФИКС: сбрасываем флаг чтобы loop всегда запускался заново
-  loopRunning=false;
-  if(!loopRunning){ loopRunning=true; requestAnimationFrame(loop); }
+  // Дожидаемся отрисовки DOM перед инитом Three.js
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      if(renderer){ // уничтожаем старый рендерер если есть
+        renderer.dispose();
+        renderer=null; scene=null; camera=null; clock=null;
+      }
+      loopRunning=false;
+      initThree();
+      buildWorld();
+      if(G.myPlayer){
+        camera.position.set(G.myPlayer.x,.92,G.myPlayer.z);
+      }
+      camera.rotation.order='YXZ';
+      camera.rotation.set(0,0,0);
+      initControls();
+      AUDIO.bg?.play().catch(()=>{});
+      showBobik('Привет... я Бобик. Мишкан где-то здесь. Будь осторожен!');
+      if(!loopRunning){ loopRunning=true; requestAnimationFrame(loop); }
+    });
+  });
 }
 
 function loop(){
   requestAnimationFrame(loop);
+  if(!clock||!renderer||!scene||!camera) return;
   const dt=Math.min(clock.getDelta(),.05);
   const t=clock.elapsedTime;
   if(!G.myPlayer||!G.map) return;
