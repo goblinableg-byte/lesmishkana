@@ -303,31 +303,22 @@ wss.on('connection', (ws) => {
       const host = lobby.players.find(p => p.id === playerId);
       if (!host || !host.isHost) return;
       lobby.gameState.phase = 'playing';
-      broadcastToLobby(playerCode, {
+
+      // ✅ ФИКС: отправляем game_start ОДИН РАЗ всем игрокам включая хоста
+      const startPayload = {
         type: 'game_start',
         map: lobby.gameState.map,
         items: lobby.gameState.items,
         players: lobby.gameState.players.map(p => ({
           id: p.id, name: p.name, x: p.x, z: p.z, color: p.color
         }))
+      };
+      lobby.players.forEach(p => {
+        if (p.ws.readyState === WebSocket.OPEN) {
+          p.ws.send(JSON.stringify(startPayload));
+        }
       });
-      broadcastToLobby(playerCode, {
-        type: 'game_start',
-        map: lobby.gameState.map,
-        items: lobby.gameState.items,
-        players: lobby.gameState.players.map(p => ({
-          id: p.id, name: p.name, x: p.x, z: p.z, color: p.color
-        }))
-      }, null);
-      // Send to host too
-      sendToPlayer(ws, {
-        type: 'game_start',
-        map: lobby.gameState.map,
-        items: lobby.gameState.items,
-        players: lobby.gameState.players.map(p => ({
-          id: p.id, name: p.name, x: p.x, z: p.z, color: p.color
-        }))
-      });
+
       startGameLoop(playerCode);
     }
 
@@ -419,6 +410,6 @@ wss.on('connection', (ws) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, () => {
   console.log(`🌲 Лес Мишкана запущен на порту ${PORT}`);
 });
