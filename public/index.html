@@ -143,11 +143,17 @@ input.inp:focus{border-color:#ff3030;}
         <div class="bar-track"><div class="bar-fill" id="adrenaline-fill" style="width:100%"></div></div>
       </div>
     </div>
-    <div id="hud-pages">
-      <div class="page-icon" id="page-0">📄</div>
-      <div class="page-icon" id="page-1">📄</div>
-      <div class="page-icon" id="page-2">📄</div>
-      <div class="page-icon" id="page-3">📄</div>
+    <div id="hud-pages" style="flex-wrap:wrap;max-width:240px;gap:3px;">
+      <div class="page-icon" id="page-0">📖</div>
+      <div class="page-icon" id="page-1">📖</div>
+      <div class="page-icon" id="page-2">📖</div>
+      <div class="page-icon" id="page-3">📖</div>
+      <div class="page-icon" id="page-4">📖</div>
+      <div class="page-icon" id="page-5">📖</div>
+      <div class="page-icon" id="page-6">📖</div>
+      <div class="page-icon" id="page-7">📖</div>
+      <div class="page-icon" id="page-8">📖</div>
+      <div class="page-icon" id="page-9">📖</div>
     </div>
     <div id="near-item">[ E ] Взять</div>
     <div id="exit-indicator">🚪 ВЫХОД — нажми E</div>
@@ -255,16 +261,20 @@ function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classL
 function showCreate(){showScreen('screen-create');}
 function showJoin(){showScreen('screen-join');}
 async function createLobby(){
+  ensureAudio();
   const name=document.getElementById('inp-create-name').value.trim()||'Игрок 1';
-  await connectWS();initAudio();
+  await connectWS();
   if(AUDIO.menu){AUDIO.menu.pause();AUDIO.menu.currentTime=0;}
   send({type:'create_lobby',name});
 }
 async function joinLobby(){
+  ensureAudio();
   const name=document.getElementById('inp-join-name').value.trim()||'Игрок';
   const code=document.getElementById('inp-join-code').value.trim().toUpperCase();
   if(code.length<4){document.getElementById('join-error').textContent='Введи 4-значный код!';return;}
-  await connectWS();initAudio();send({type:'join_lobby',name,code});
+  await connectWS();
+  if(AUDIO.menu){AUDIO.menu.pause();AUDIO.menu.currentTime=0;}
+  send({type:'join_lobby',name,code});
 }
 function startGame(){send({type:'start_game'});}
 function updateLobbyUI(players){
@@ -668,6 +678,8 @@ function handleMessage(msg){
       myId=msg.playerId;isHost=false;
       document.getElementById('lobby-code').textContent=msg.code;
       document.getElementById('btn-start').style.display='none';
+      document.getElementById('lobby-wait-msg').textContent='Ожидание хоста...';
+      if(msg.players)updateLobbyUI(msg.players);
       showScreen('screen-lobby');break;
     case 'lobby_update':updateLobbyUI(msg.players);break;
     case 'error':document.getElementById('join-error').textContent=msg.message;break;
@@ -713,8 +725,7 @@ function handleMessage(msg){
         showPageNotif(G.pages,rem);
         if(rem===0){
           G.allPagesCollected=true;
-          showBobik('БОБИК СВОБОДЕН! Теперь помогите ему убежать!');
-          send({type:'phase2_start'});
+          showBobik('Все дневники найдены! Беги к выходу на севере!');
         }
         updatePagesHUD();
       }
@@ -746,7 +757,10 @@ function updateHUD(){
 }
 function updatePagesHUD(){
   const col=G.items.filter(i=>i.type==='page'&&i.collected).length;
-  for(let i=0;i<4;i++)if(i<col)document.getElementById(`page-${i}`).classList.add('collected');
+  for(let i=0;i<10;i++){
+    const el=document.getElementById(`page-${i}`);
+    if(el&&i<col)el.classList.add('collected');
+  }
 }
 function dist2d(a,b){return Math.sqrt((a.x-b.x)**2+(a.z-b.z)**2);}
 
@@ -899,7 +913,8 @@ function startGameClient(){
       camera_pz=G.myPlayer.z+0.5;
       G.camYaw=0;G.camPitch=0;
       initControls();
-      AUDIO.bg?.play().catch(()=>{});
+      if(AUDIO.menu){AUDIO.menu.pause();AUDIO.menu.currentTime=0;}
+      if(AUDIO.bg){AUDIO.bg.currentTime=0;AUDIO.bg.play().catch(()=>{});}
       showBobik('Привет... я Бобик. Мишкан где-то здесь!');
       if(loopId)cancelAnimationFrame(loopId);
       lastTime=performance.now();
@@ -1200,7 +1215,8 @@ function playCutscene(type, onDone){
 
 // ─── ТИТРЫ ───────────────────────────────────────────
 function showCredits(){
-  if(AUDIO.bg)AUDIO.bg.pause();
+  if(AUDIO.bg){AUDIO.bg.pause();AUDIO.bg.currentTime=0;}
+  if(AUDIO.menu){AUDIO.menu.pause();AUDIO.menu.currentTime=0;}
   playAudio('credits');
   showScreen('screen-credits');
   const inner=document.getElementById('credits-inner');
@@ -1219,7 +1235,8 @@ function showCredits(){
 }
 
 function showEndScreen(won){
-  if(AUDIO.bg)AUDIO.bg.pause();
+  if(AUDIO.bg){AUDIO.bg.pause();AUDIO.bg.currentTime=0;}
+  if(AUDIO.menu){AUDIO.menu.pause();AUDIO.menu.currentTime=0;}
   if(won){
     showCredits();
   } else {
@@ -1229,17 +1246,20 @@ function showEndScreen(won){
     showScreen('screen-end');
   }
 }
-</script>
-<script>
-// Запуск меню-музыки при первом взаимодействии
-let menuMusicStarted=false;
-function startMenuMusic(){
-  if(menuMusicStarted||!AUDIO.menu)return;
-  menuMusicStarted=true;
-  AUDIO.menu.play().catch(()=>{});
+
+// ── МЕНЮ МУЗЫКА ──────────────────────────────────
+let audioReady=false;
+function ensureAudio(){
+  if(audioReady)return;
+  audioReady=true;
+  initAudio();
+  // Небольшая задержка чтобы браузер разрешил автовоспроизведение
+  setTimeout(()=>{
+    if(AUDIO.menu)AUDIO.menu.play().catch(()=>{});
+  },100);
 }
-document.addEventListener('touchstart',()=>{initAudio();startMenuMusic();},{once:true,passive:true});
-document.addEventListener('click',()=>{initAudio();startMenuMusic();},{once:true});
+document.addEventListener('touchstart',ensureAudio,{once:true,passive:true});
+document.addEventListener('click',ensureAudio,{once:true});
 </script>
 </body>
 </html>
