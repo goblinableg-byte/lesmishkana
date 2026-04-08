@@ -80,14 +80,18 @@ function placeItems(map) {
   const items = [];
   const energos = [];
   const size = 40;
-  // 4 diary pages
-  const pagePositions = [[10, 8], [30, 10], [15, 30], [28, 28]];
+  // 10 дневников по всей карте
+  const pagePositions = [
+    [8, 6],[32, 8],[12, 14],[26, 12],
+    [6, 22],[34, 20],[18, 28],[10, 34],
+    [30, 32],[22, 18]
+  ];
   pagePositions.forEach((pos, i) => {
     map[pos[1]][pos[0]] = 0;
     items.push({ id: `page_${i}`, type: 'page', x: pos[0] + 0.5, z: pos[1] + 0.5, collected: false });
   });
-  // Energos scattered
-  for (let i = 0; i < 8; i++) {
+  // 10 энергосов
+  for (let i = 0; i < 10; i++) {
     let x, z;
     do {
       x = Math.floor(Math.random() * (size - 4)) + 2;
@@ -100,11 +104,11 @@ function placeItems(map) {
 
 function createMishkan() {
   return {
-    x: 20, z: 20,
+    x: 8, z: 8,
     angle: 0,
-    speed: 0.04,
-    state: 'patrol', // patrol, chase
-    patrolTarget: { x: 20, z: 20 },
+    speed: 0.055,  // чуть быстрее
+    state: 'patrol',
+    patrolTarget: { x: 15, z: 15 },
     lastUpdate: Date.now()
   };
 }
@@ -131,12 +135,12 @@ function updateMishkan(gameState) {
   });
 
   // Chase if within range
-  if (closestPlayer && closestDist < 12) {
+  if (closestPlayer && closestDist < 18) {
     mishkan.state = 'chase';
     const dx = closestPlayer.x - mishkan.x;
     const dz = closestPlayer.z - mishkan.z;
     const len = Math.sqrt(dx * dx + dz * dz);
-    const speed = mishkan.speed * 60 * dt * 1.3;
+    const speed = mishkan.speed * 60 * dt * 1.8;
     const nx = mishkan.x + (dx / len) * speed;
     const nz = mishkan.z + (dz / len) * speed;
     if (map[Math.floor(nz)][Math.floor(nx)] !== 1) {
@@ -210,23 +214,21 @@ function startGameLoop(code) {
       items: gs.items
     });
 
-    // Check win condition
+    // Check win/lose
     const pages = gs.items.filter(i => i.type === 'page');
     const allCollected = pages.every(p => p.collected);
     const alivePlayers = gs.players.filter(p => !p.caught);
-    if (allCollected) {
-      // Check if any alive player near exit
+    if (allCollected && gs.phase === 'playing') {
       alivePlayers.forEach(p => {
         const dx = p.x - 20.5;
         const dz = p.z - 1.5;
-        if (Math.sqrt(dx * dx + dz * dz) < 2) {
+        if (Math.sqrt(dx * dx + dz * dz) < 3) {
           gs.phase = 'won';
           broadcastToLobby(code, { type: 'game_won' });
         }
       });
     }
-    // Lose condition
-    if (alivePlayers.length === 0) {
+    if (alivePlayers.length === 0 && gs.phase === 'playing') {
       gs.phase = 'lost';
       broadcastToLobby(code, { type: 'game_lost' });
     }
@@ -290,11 +292,9 @@ wss.on('connection', (ws) => {
         angle: 0, caught: false, hp: 100,
         color: colors[idx], stamina: 100, adrenaline: false
       });
-      sendToPlayer(ws, { type: 'joined_lobby', code, playerId, isHost: false });
-      broadcastToLobby(code, {
-        type: 'lobby_update',
-        players: lobbies[code].players.map(p => ({ id: p.id, name: p.name, color: p.color }))
-      });
+      const currentPlayers = lobbies[code].players.map(p => ({ id: p.id, name: p.name, color: p.color }));
+      sendToPlayer(ws, { type: 'joined_lobby', code, playerId, isHost: false, players: currentPlayers });
+      broadcastToLobby(code, { type: 'lobby_update', players: currentPlayers });
     }
 
     else if (msg.type === 'start_game') {
