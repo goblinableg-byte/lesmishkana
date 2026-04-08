@@ -557,10 +557,11 @@ function renderFrame(px,pz,yaw,pitch,map){
 }
 
 // ── РЕНДЕР СПРАЙТА (billboard) ──
-function renderSprite(px,pz,yaw,pitch,sx,sz,imgd,sprW,sprH,scaleMul=1){
+// vOffset: 0=стоит на полу (персонажи), 0.5=центр (предметы на полу), -0.5=в воздухе
+function renderSprite(px,pz,yaw,pitch,sx,sz,imgd,sprW,sprH,scaleMul=1,vOffset=0){
   const dx=sx-px,dz=sz-pz;
   const dist=Math.sqrt(dx*dx+dz*dz);
-  if(dist<0.2||dist>20)return;
+  if(dist<0.1||dist>22)return;
 
   // Угол спрайта относительно камеры
   let sprAngle=Math.atan2(dz,dx)-yaw+Math.PI/2;
@@ -572,28 +573,34 @@ function renderSprite(px,pz,yaw,pitch,sx,sz,imgd,sprW,sprH,scaleMul=1){
   const pitchOffset=Math.floor(pitch*(H/1.4));
 
   const screenX=Math.floor((sprAngle/RC.FOV+0.5)*W);
-  // Минимальный размер — спрайт не уменьшается меньше определённого размера
-  const rawH=H/dist;
-  const minH=H*0.35; // минимум 35% высоты экрана
-  const sprHeight=Math.floor(Math.max(rawH,minH)*scaleMul);
+  const sprHeight=Math.floor((H/dist)*scaleMul);
   const sprWidth=Math.floor(sprHeight*(sprW/sprH));
 
-  const drawStartY=Math.max(0,Math.floor(H/2-sprHeight/2+pitchOffset));
-  const drawEndY=Math.min(H-1,Math.floor(H/2+sprHeight/2+pitchOffset));
-  const drawStartX=Math.max(0,screenX-sprWidth/2);
-  const drawEndX=Math.min(W-1,screenX+sprWidth/2);
+  // Горизонт — уровень пола. Низ спрайта = горизонт + pitchOffset
+  // vOffset=0: низ спрайта на полу. vOffset=1: спрайт поднят на свою высоту вверх
+  const floorY = Math.floor(H/2 + pitchOffset);
+  const bottomY = floorY + Math.floor(sprHeight * vOffset);
+  const topY    = bottomY - sprHeight;
 
-  const fogF=Math.max(0,1-dist/16);
+  const drawStartY=Math.max(0,topY);
+  const drawEndY=Math.min(H-1,bottomY);
+  const drawStartX=Math.max(0,screenX-Math.floor(sprWidth/2));
+  const drawEndX=Math.min(W-1,screenX+Math.floor(sprWidth/2));
+
+  if(drawStartX>drawEndX||drawStartY>drawEndY)return;
+
+  const fogF=Math.max(0,1-dist/18);
+  const data=RC.imgData.data;
 
   for(let x=drawStartX;x<=drawEndX;x++){
-    if(dist>=RC.zbuf[x])continue; // за стеной
-    const tx=(x-(screenX-sprWidth/2))/sprWidth;
+    if(dist>=RC.zbuf[x])continue;
+    const tx=(x-(screenX-Math.floor(sprWidth/2)))/sprWidth;
     for(let y=drawStartY;y<=drawEndY;y++){
-      const ty=(y-drawStartY)/(drawEndY-drawStartY+1);
+      const ty=(y-topY)/sprHeight;
+      if(ty<0||ty>1)continue;
       const[r,g,b,a]=sampleTex(imgd,tx,ty);
       if(a<128)continue;
       const i=(y*W+x)*4;
-      const data=RC.imgData.data;
       data[i]=Math.floor(r*fogF);data[i+1]=Math.floor(g*fogF);data[i+2]=Math.floor(b*fogF);data[i+3]=255;
     }
   }
@@ -1031,25 +1038,25 @@ function loop(now){
 
   // Спрайты — собираем список с расстояниями и сортируем
   const sprites=[];
-  // Мишкан
-  sprites.push({x:G.mishkan.x+.5,z:G.mishkan.z+.5,imgd:IMISHKAN,w:64,h:96,scale:1.4});
-  // Предметы
+  // Мишкан — стоит на полу
+  sprites.push({x:G.mishkan.x+.5,z:G.mishkan.z+.5,imgd:IMISHKAN,w:64,h:96,scale:1.0,vo:0});
+  // Предметы — лежат/висят чуть над полом
   G.items.forEach(item=>{
     if(item.collected)return;
-    if(item.type==='page')sprites.push({x:item.x,z:item.z,imgd:IPAGE,w:32,h:48,scale:.7});
-    else sprites.push({x:item.x,z:item.z,imgd:IENERGOS,w:24,h:40,scale:.6});
+    if(item.type==='page')sprites.push({x:item.x,z:item.z,imgd:IPAGE,w:32,h:48,scale:0.5,vo:0.25});
+    else sprites.push({x:item.x,z:item.z,imgd:IENERGOS,w:24,h:40,scale:0.45,vo:0.25});
   });
-  // Выход
-  sprites.push({x:20.5,z:.9,imgd:IEXIT,w:48,h:80,scale:1.0});
-  // Другие игроки
+  // Выход — стоит на полу, высокий
+  sprites.push({x:20.5,z:.9,imgd:IEXIT,w:48,h:80,scale:1.1,vo:0});
+  // Другие игроки — стоят на полу
   Object.values(G.players).forEach(p=>{
     if(p.id===myId)return;
     if(!playerSprites[p.id])playerSprites[p.id]=sprToImgData(makeSprPlayer(p.color||'#4ecdc4'));
-    sprites.push({x:p.x,z:p.z,imgd:playerSprites[p.id],w:32,h:64,scale:.9});
+    sprites.push({x:p.x,z:p.z,imgd:playerSprites[p.id],w:32,h:64,scale:0.9,vo:0});
   });
   // Сортируем по расстоянию (дальние первыми)
   sprites.sort((a,b)=>dist2d({x:camera_px,z:camera_pz},b)-dist2d({x:camera_px,z:camera_pz},a));
-  sprites.forEach(s=>renderSprite(camera_px,camera_pz,renderYaw,renderPitch,s.x,s.z,s.imgd,s.w,s.h,s.scale));
+  sprites.forEach(s=>renderSprite(camera_px,camera_pz,renderYaw,renderPitch,s.x,s.z,s.imgd,s.w,s.h,s.scale,s.vo));
 
   drawCrosshair();
   RC.ctx.putImageData(RC.imgData,0,0);
