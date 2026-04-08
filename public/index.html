@@ -59,6 +59,7 @@ input.inp:focus{border-color:#ff3030;}
 
 #bobik-msg{position:absolute;bottom:190px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid #3a5a3a;border-radius:8px;padding:7px 14px;max-width:80vw;font-size:.95rem;color:#ffe08a;text-align:center;opacity:0;transition:opacity .5s;pointer-events:none;white-space:nowrap;}
 #bobik-msg.show{opacity:1;}
+#page-notif.show{opacity:1 !important;}
 #bobik-msg::before{content:'🟡 Бобик: ';}
 
 #near-item{position:absolute;bottom:205px;left:50%;transform:translateX(-50%);background:rgba(200,168,74,.15);border:1px solid #c8a84a;border-radius:6px;padding:4px 12px;font-size:.9rem;color:#c8a84a;display:none;pointer-events:none;}
@@ -151,6 +152,7 @@ input.inp:focus{border-color:#ff3030;}
     <div id="near-item">[ E ] Взять</div>
     <div id="exit-indicator">🚪 ВЫХОД — нажми E</div>
     <div id="exit-arrow"></div>
+    <div id="page-notif" style="position:absolute;top:18px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.88);border:2px solid #c8a84a;border-radius:8px;padding:8px 20px;font-family:'VT323',monospace;font-size:1.2rem;text-align:center;opacity:0;transition:opacity .4s;pointer-events:none;white-space:nowrap;z-index:9;"></div>
     <div id="bobik-msg"></div>
     <div id="caught-msg">
       😵 ТЫ ПОЙМАН МИШКАНОМ!<br>
@@ -180,6 +182,32 @@ input.inp:focus{border-color:#ff3030;}
   <button class="btn" onclick="location.reload()">В ГЛАВНОЕ МЕНЮ</button>
 </div>
 
+<!-- КАТСЦЕНА -->
+<div id="screen-cutscene" class="screen" style="background:#000;z-index:300;flex-direction:column;gap:0;">
+  <canvas id="cutscene-canvas" style="width:100%;height:100%;display:block;image-rendering:pixelated;"></canvas>
+</div>
+
+<!-- ТИТРЫ -->
+<div id="screen-credits" class="screen" style="background:#000;z-index:300;overflow:hidden;">
+  <div id="credits-inner" style="position:absolute;width:100%;text-align:center;font-family:'Creepster',cursive;color:#ff3030;font-size:clamp(1.5rem,5vw,3rem);line-height:2;">
+    <div style="height:100vh;"></div>
+    <div>МИШКАН</div><div>МИШКАН</div><div>МИШКАН</div>
+    <div style="font-size:.6em;color:#aaa;font-family:'VT323',monospace;">разработка: МИШКАН STUDIOS</div>
+    <div>МИШКАН</div><div>МИШКАН</div>
+    <div style="font-size:.7em;color:#ff6b6b;">МИШКАН — ГЛ. ЗЛОДЕЙ</div>
+    <div>МИШКАН</div><div>МИШКАН</div><div>МИШКАН</div>
+    <div style="font-size:.5em;color:#888;font-family:'VT323',monospace;">звуки: МИШКАН SOUND</div>
+    <div>МИШКАН</div><div>МИШКАН</div>
+    <div style="font-size:.8em;color:#ffe66d;">МИШКАН — НАВСЕГДА</div>
+    <div>МИШКАН</div><div>МИШКАН</div><div>МИШКАН</div>
+    <div style="font-size:.5em;color:#888;font-family:'VT323',monospace;">особая благодарность: МИШКАНУ</div>
+    <div>МИШКАН</div><div>МИШКАН</div>
+    <div style="font-size:.6em;color:#4ecdc4;font-family:'VT323',monospace;">и БОБИКУ, конечно</div>
+    <div>МИШКАН</div><div>МИШКАН</div><div>МИШКАН</div>
+    <div style="height:100vh;"></div>
+  </div>
+</div>
+
 <script>
 'use strict';
 // ═══════════════════════════════════════════════════
@@ -189,10 +217,16 @@ const AUDIO={};let audioCtx=null;
 function initAudio(){
   AUDIO.bg=new Audio('https://image2url.com/r2/default/files/1775502743982-2a4e8ee7-3dfd-4bed-a35e-2fa1db366b96.m4a');
   AUDIO.bg.loop=true;AUDIO.bg.volume=0.15;
+  AUDIO.menu=new Audio('https://image2url.com/r2/default/files/1775646157075-e871b98c-9872-4da9-94f4-48c793bbbe2a.m4a');
+  AUDIO.menu.loop=true;AUDIO.menu.volume=0.2;
   AUDIO.zoom=new Audio('https://image2url.com/r2/default/files/1775503673618-4ef1e1d3-066a-4e58-8442-2f4a80b8fc52.mp3');
   AUDIO.zoom.volume=0.9;
   AUDIO.scream=new Audio('https://image2url.com/r2/default/files/1775503545113-70bfeb3a-77a6-48ad-8ebe-e2639c1e2b77.mp3');
   AUDIO.caught=new Audio('https://image2url.com/r2/default/files/1775503969660-11d003f6-bf69-4148-bb38-965ed4f0808b.mp3');
+  AUDIO.page=new Audio('https://image2url.com/r2/default/files/1775646068027-67452941-3f8a-4bd4-8cc4-9dbc38780ade.mp3');
+  AUDIO.page.volume=0.8;
+  AUDIO.credits=new Audio('https://image2url.com/r2/default/files/1775646950217-1c4b6d5f-5e41-4217-9032-6477f9c76a9b.mp3');
+  AUDIO.credits.volume=0.7;
   try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}
 }
 function playFootstep(){
@@ -220,7 +254,12 @@ function send(o){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(o)
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 function showCreate(){showScreen('screen-create');}
 function showJoin(){showScreen('screen-join');}
-async function createLobby(){const name=document.getElementById('inp-create-name').value.trim()||'Игрок 1';await connectWS();initAudio();send({type:'create_lobby',name});}
+async function createLobby(){
+  const name=document.getElementById('inp-create-name').value.trim()||'Игрок 1';
+  await connectWS();initAudio();
+  if(AUDIO.menu){AUDIO.menu.pause();AUDIO.menu.currentTime=0;}
+  send({type:'create_lobby',name});
+}
 async function joinLobby(){
   const name=document.getElementById('inp-join-name').value.trim()||'Игрок';
   const code=document.getElementById('inp-join-code').value.trim().toUpperCase();
@@ -533,7 +572,10 @@ function renderSprite(px,pz,yaw,pitch,sx,sz,imgd,sprW,sprH,scaleMul=1){
   const pitchOffset=Math.floor(pitch*(H/1.4));
 
   const screenX=Math.floor((sprAngle/RC.FOV+0.5)*W);
-  const sprHeight=Math.floor((H/dist)*scaleMul);
+  // Минимальный размер — спрайт не уменьшается меньше определённого размера
+  const rawH=H/dist;
+  const minH=H*0.35; // минимум 35% высоты экрана
+  const sprHeight=Math.floor(Math.max(rawH,minH)*scaleMul);
   const sprWidth=Math.floor(sprHeight*(sprW/sprH));
 
   const drawStartY=Math.max(0,Math.floor(H/2-sprHeight/2+pitchOffset));
@@ -659,9 +701,14 @@ function handleMessage(msg){
       G.items.forEach(i=>{if(i.id===msg.itemId)i.collected=true;});
       if(msg.itemType==='page'){
         G.pages=G.items.filter(i=>i.type==='page'&&i.collected).length;
-        const rem=4-G.pages;
-        if(rem===0){G.allPagesCollected=true;showBobik('ВЫ НАШЛИ ВСЕ СТРАНИЦЫ! Бегите к выходу на север!');}
-        else showBobik(`Страница найдена! Осталось: ${rem}`);
+        const rem=10-G.pages;
+        playAudio('page');
+        showPageNotif(G.pages,rem);
+        if(rem===0){
+          G.allPagesCollected=true;
+          showBobik('БОБИК СВОБОДЕН! Теперь помогите ему убежать!');
+          send({type:'phase2_start'});
+        }
         updatePagesHUD();
       }
       if(msg.itemType==='energo'&&msg.playerId===myId){
@@ -670,7 +717,11 @@ function handleMessage(msg){
         showBobik('НАНОДРЕНАЛИН! Ты летишь как ракета!');
       }
       break;
-    case 'game_won':showEndScreen(true);break;
+    case 'game_won':
+      if(loopId){cancelAnimationFrame(loopId);loopId=null;}
+      if(AUDIO.bg)AUDIO.bg.pause();
+      playCutscene('outro',()=>showCredits());
+      break;
     case 'game_lost':showEndScreen(false);break;
   }
 }
@@ -695,11 +746,14 @@ function dist2d(a,b){return Math.sqrt((a.x-b.x)**2+(a.z-b.z)**2);}
 // ═══════════════════════════════════════════════════
 //  ЭФФЕКТЫ
 // ═══════════════════════════════════════════════════
-let mishkanZoomTO=null,lastInView=false;
+let mishkanZoomTO=null,lastInView=false,cameraShake=0;
 function updateMishkanEffects(){
   if(!G.myPlayer||G.caught)return;
   const d=dist2d(G.myPlayer,G.mishkan);
-  setBgVol(.05+Math.max(0,1-d/20)*.72);
+  const vol=.05+Math.max(0,1-d/20)*.72;
+  setBgVol(vol);
+  // Тряска убирается когда музыка тихая (мишкан далеко)
+  if(vol<0.15) cameraShake=Math.max(0,cameraShake-0.015);
   const pulse=document.getElementById('overlay-pulse');
   if(d<8){pulse.classList.add('beating');pulse.style.animationDuration=`${Math.max(.28,.8-(8-d)*.065)}s`;}
   else pulse.classList.remove('beating');
@@ -713,8 +767,12 @@ function updateMishkanEffects(){
 function triggerMishkanSeen(){
   mishkanZoomTO=setTimeout(()=>mishkanZoomTO=null,3200);
   playAudio('zoom');
-  // Эффект вспышки на canvas
-  setTimeout(()=>{},750);
+  // Зум — временно уменьшаем FOV (приближаем к мишкану)
+  RC._savedFOV=RC.FOV;
+  RC.FOV=RC.FOV*0.45; RC.HALF_FOV=RC.FOV/2;
+  setTimeout(()=>{RC.FOV=RC._savedFOV||Math.PI/2.2;RC.HALF_FOV=RC.FOV/2;},800);
+  // Тряска камеры — пока музыка громкая (мишкан близко)
+  cameraShake=1.0;
 }
 function triggerCaught(){
   document.getElementById('overlay-red').classList.add('active');
@@ -728,6 +786,16 @@ function showBobik(msg){
   const el=document.getElementById('bobik-msg');
   el.textContent=msg;el.classList.add('show');
   clearTimeout(bobikTO);bobikTO=setTimeout(()=>el.classList.remove('show'),4500);
+}
+let pageNotifTO=null;
+function showPageNotif(found,rem){
+  const el=document.getElementById('page-notif');
+  el.innerHTML=rem===0
+    ?'<span style="color:#4ac84a">📚 ВСЕ ДНЕВНИКИ НАЙДЕНЫ!</span>'
+    :`<span style="color:#c8a84a">📖 Дневник найден!</span> <span style="color:#fff">Осталось: <b style="color:#ff6b6b;font-size:1.4em">${rem}</b></span>`;
+  el.classList.add('show');
+  clearTimeout(pageNotifTO);
+  pageNotifTO=setTimeout(()=>el.classList.remove('show'),3000);
 }
 
 // ═══════════════════════════════════════════════════
@@ -815,20 +883,22 @@ function initControls(){
 let lastSend=0,bobikTimer=30,loopId=null,lastTime=0;
 
 function startGameClient(){
-  showScreen('screen-game');
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    initRC();
-    // Стартовая позиция
-    camera_px=G.myPlayer.x+0.5;
-    camera_pz=G.myPlayer.z+0.5;
-    G.camYaw=0;G.camPitch=0;
-    initControls();
-    AUDIO.bg?.play().catch(()=>{});
-    showBobik('Привет... я Бобик. Мишкан где-то здесь!');
-    if(loopId)cancelAnimationFrame(loopId);
-    lastTime=performance.now();
-    loopId=requestAnimationFrame(loop);
-  }));
+  if(AUDIO.menu){AUDIO.menu.pause();AUDIO.menu.currentTime=0;}
+  playCutscene('intro',()=>{
+    showScreen('screen-game');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      initRC();
+      camera_px=G.myPlayer.x+0.5;
+      camera_pz=G.myPlayer.z+0.5;
+      G.camYaw=0;G.camPitch=0;
+      initControls();
+      AUDIO.bg?.play().catch(()=>{});
+      showBobik('Привет... я Бобик. Мишкан где-то здесь!');
+      if(loopId)cancelAnimationFrame(loopId);
+      lastTime=performance.now();
+      loopId=requestAnimationFrame(loop);
+    }));
+  });
 }
 
 // Позиция камеры (отдельно от G.myPlayer для плавности)
@@ -932,9 +1002,11 @@ function loop(now){
       if(d<8)showBobik(`${near.name} пойман! До него ${Math.round(d)} м`);
     }
 
-    // Финальный pitch с боббингом
-    var renderPitch=G.camPitch+bobPitch;
-    var renderYaw=G.camYaw+bobYaw;
+    // Финальный pitch с боббингом + тряска камеры
+    const shakeAmt=cameraShake>0?cameraShake*0.04:0;
+    if(cameraShake>0)cameraShake=Math.max(0,cameraShake-0.008);
+    var renderPitch=G.camPitch+bobPitch+(Math.random()-.5)*shakeAmt;
+    var renderYaw=G.camYaw+bobYaw+(Math.random()-.5)*shakeAmt*1.5;
   } else {
     // Пойман
     var renderPitch=G.camPitch-.2+Math.sin(t*.5)*.05;
@@ -993,13 +1065,174 @@ function loop(now){
   if(bobikTimer<=0){bobikTimer=28+Math.random()*20;if(Math.random()<.3)showBobik(BM[Math.floor(Math.random()*BM.length)]);}
 }
 
+// ─── КАТСЦЕНА ───────────────────────────────────────
+function playCutscene(type, onDone){
+  showScreen('screen-cutscene');
+  const canvas=document.getElementById('cutscene-canvas');
+  canvas.width=320;canvas.height=200;
+  canvas.style.width=window.innerWidth+'px';
+  canvas.style.height=window.innerHeight+'px';
+  const ctx=canvas.getContext('2d');
+  let t=0,frame=0;
+  const playerList=Object.values(G.players);
+  const colors=['#ff6b6b','#4ecdc4','#ffe66d','#a8e6cf'];
+
+  function drawScene(){
+    ctx.fillStyle='#000';ctx.fillRect(0,0,320,200);
+    if(type==='intro'){
+      // Небо
+      ctx.fillStyle='#0a1a0a';ctx.fillRect(0,0,320,100);
+      // Земля
+      ctx.fillStyle='#0c1a08';ctx.fillRect(0,100,320,100);
+      // Деревья фон
+      ctx.fillStyle='#061006';
+      for(let i=0;i<8;i++){const x=i*40+20;ctx.fillRect(x-4,40,8,60);ctx.beginPath();ctx.arc(x,38,16,0,Math.PI*2);ctx.fill();}
+      // Грузовик едет
+      const truckX=Math.max(10,200-t*0.8);
+      ctx.fillStyle='#3a2a1a';ctx.fillRect(truckX,70,90,35);
+      ctx.fillStyle='#4a3a2a';ctx.fillRect(truckX+55,65,35,40);
+      ctx.fillStyle='#ffcc44';ctx.fillRect(truckX+88,72,6,8);
+      ctx.fillStyle='#222';
+      ctx.beginPath();ctx.arc(truckX+15,106,8,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(truckX+75,106,8,0,Math.PI*2);ctx.fill();
+      if(t>120){
+        // Игроки выходят
+        const shown=Math.min(Math.floor((t-120)/15),playerList.length);
+        for(let i=0;i<shown;i++){
+          const px=truckX-5-i*18,py=88;
+          ctx.fillStyle=colors[i]||'#ff6b6b';
+          ctx.fillRect(px-5,py,10,18);
+          ctx.beginPath();ctx.arc(px,py-4,5,0,Math.PI*2);ctx.fill();
+        }
+      }
+      if(t>220){
+        // Грузовик уезжает вправо
+        ctx.fillStyle='#0a1a0a';ctx.fillRect(0,0,320,200);// fade
+      }
+      // Текст
+      ctx.fillStyle=`rgba(255,255,255,${Math.min(1,(t-60)/40)})`;
+      ctx.font='bold 11px monospace';ctx.textAlign='center';
+      ctx.fillText('Лес Мишкана',160,20);
+    } else if(type==='outro'){
+      // Бобик прыгает
+      const bobY=100+Math.sin(t*0.15)*8;
+      ctx.fillStyle='#ffe44d';
+      ctx.beginPath();ctx.arc(130,bobY,18,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#ff9900';
+      ctx.beginPath();ctx.arc(124,bobY-5,5,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(136,bobY-5,5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#000';
+      ctx.beginPath();ctx.arc(124,bobY-5,2,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(136,bobY-5,2,0,Math.PI*2);ctx.fill();
+      // Мишкан подкрадывается
+      const mX=Math.max(175,280-t*0.5);
+      ctx.fillStyle='#1c0b00';ctx.fillRect(mX-10,85,24,35);ctx.fillRect(mX-8,72,20,16);
+      ctx.fillStyle='#ff1100';
+      ctx.beginPath();ctx.arc(mX-3,78,4,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(mX+5,78,4,0,Math.PI*2);ctx.fill();
+      if(t>80&&t<140){
+        // Мишкан бьёт
+        ctx.fillStyle='#ff3030';
+        for(let i=0;i<5;i++){
+          const ax=mX-15+Math.random()*30,ay=85+Math.random()*30;
+          ctx.fillRect(ax,ay,3,3);
+        }
+      }
+      if(t>140){
+        // Бобик падает
+        ctx.save();ctx.translate(130,bobY+15);ctx.rotate(Math.PI/2);
+        ctx.fillStyle='#ffe44d';ctx.beginPath();ctx.arc(0,0,18,0,Math.PI*2);ctx.fill();
+        ctx.restore();
+        ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='9px monospace';ctx.textAlign='center';
+        ctx.fillText('помогите мне!',130,130);
+        ctx.fillText('возьмите меня на плечо!',130,142);
+      }
+      if(t>200){
+        // Коридор
+        ctx.fillStyle='#050a05';ctx.fillRect(0,0,320,200);
+        ctx.fillStyle='#1a3a1a';
+        for(let i=0;i<8;i++){
+          const w=300-i*35,h=180-i*20;
+          ctx.strokeStyle=`rgba(50,120,50,${0.3+i*0.08})`;ctx.lineWidth=1;
+          ctx.strokeRect(160-w/2,100-h/2,w,h);
+        }
+        // Белый свет в конце
+        const grad=ctx.createRadialGradient(160,100,0,160,100,30+Math.sin(t*0.05)*5);
+        grad.addColorStop(0,'rgba(255,255,255,.9)');grad.addColorStop(1,'rgba(255,255,255,0)');
+        ctx.fillStyle=grad;ctx.fillRect(130,70,60,60);
+        ctx.fillStyle='rgba(255,255,255,.8)';ctx.font='8px monospace';ctx.textAlign='center';
+        ctx.fillText('ВЫХОД',160,185);
+      }
+    }
+  }
+
+  // Чёрный экран fade-in
+  let fadeIn=1;
+  const interval=setInterval(()=>{
+    drawScene();
+    // fade-in
+    if(fadeIn>0){
+      ctx.fillStyle=`rgba(0,0,0,${fadeIn})`;ctx.fillRect(0,0,320,200);
+      fadeIn=Math.max(0,fadeIn-0.02);
+    }
+    t++;frame++;
+    const maxT=type==='intro'?260:260;
+    if(t>=maxT){
+      clearInterval(interval);
+      // Fade-out
+      let fo=0;
+      const fo_int=setInterval(()=>{
+        drawScene();
+        fo+=0.03;
+        ctx.fillStyle=`rgba(0,0,0,${Math.min(1,fo)})`;ctx.fillRect(0,0,320,200);
+        if(fo>=1){clearInterval(fo_int);onDone&&onDone();}
+      },16);
+    }
+  },16);
+}
+
+// ─── ТИТРЫ ───────────────────────────────────────────
+function showCredits(){
+  if(AUDIO.bg)AUDIO.bg.pause();
+  playAudio('credits');
+  showScreen('screen-credits');
+  const inner=document.getElementById('credits-inner');
+  inner.style.transform='translateY(0)';
+  const totalH=inner.scrollHeight+window.innerHeight;
+  const duration=60000; // 60 сек
+  let start=null;
+  function anim(ts){
+    if(!start)start=ts;
+    const prog=Math.min((ts-start)/duration,1);
+    inner.style.transform=`translateY(${-prog*totalH}px)`;
+    if(prog<1)requestAnimationFrame(anim);
+    else{setTimeout(()=>location.reload(),1500);}
+  }
+  requestAnimationFrame(anim);
+}
+
 function showEndScreen(won){
   if(AUDIO.bg)AUDIO.bg.pause();
-  document.getElementById('end-title').textContent=won?'ВЫ ВЫБРАЛИСЬ!':'МИШКАН ПОБЕДИЛ';
-  document.getElementById('end-title').style.color=won?'#4ac84a':'#ff3030';
-  document.getElementById('end-msg').textContent=won?'Бобик счастлив. Приходите ещё... только не ночью.':'Мишкан поймал всех. Бобик грустит.';
-  showScreen('screen-end');
+  if(won){
+    showCredits();
+  } else {
+    document.getElementById('end-title').textContent='МИШКАН ПОБЕДИЛ';
+    document.getElementById('end-title').style.color='#ff3030';
+    document.getElementById('end-msg').textContent='Мишкан поймал всех. Бобик грустит.';
+    showScreen('screen-end');
+  }
 }
+</script>
+<script>
+// Запуск меню-музыки при первом взаимодействии
+let menuMusicStarted=false;
+function startMenuMusic(){
+  if(menuMusicStarted||!AUDIO.menu)return;
+  menuMusicStarted=true;
+  AUDIO.menu.play().catch(()=>{});
+}
+document.addEventListener('touchstart',()=>{initAudio();startMenuMusic();},{once:true,passive:true});
+document.addEventListener('click',()=>{initAudio();startMenuMusic();},{once:true});
 </script>
 </body>
 </html>
