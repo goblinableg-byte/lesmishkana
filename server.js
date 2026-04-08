@@ -104,12 +104,13 @@ function placeItems(map) {
 
 function createMishkan() {
   return {
-    x: 8, z: 8,
+    x: 30, z: 30,
     angle: 0,
     speed: 0.055,  // чуть быстрее
     state: 'patrol',
-    patrolTarget: { x: 15, z: 15 },
-    lastUpdate: Date.now()
+    patrolTarget: { x: 25, z: 25 },
+    lastUpdate: Date.now(),
+    gracePeriod: 8000
   };
 }
 
@@ -133,6 +134,13 @@ function updateMishkan(gameState) {
       closestPlayer = p;
     }
   });
+
+  // Grace period — первые 8 секунд Мишкан не преследует
+  if (mishkan.gracePeriod > 0) {
+    mishkan.gracePeriod -= dt * 1000;
+    if (mishkan.gracePeriod < 0) mishkan.gracePeriod = 0;
+    closestPlayer = null; // не атакует
+  }
 
   // Chase if within range
   if (closestPlayer && closestDist < 18) {
@@ -410,6 +418,6 @@ wss.on('connection', (ws) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🌲 Лес Мишкана запущен на порту ${PORT}`);
 });
