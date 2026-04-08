@@ -636,7 +636,11 @@ function handleMessage(msg){
       G.mishkan=msg.mishkan;
       msg.players.forEach(p=>{
         if(G.players[p.id])Object.assign(G.players[p.id],p);
-        if(p.id!==myId&&!playerSprites[p.id])playerSprites[p.id]=sprToImgData(makeSprPlayer(p.color));
+        else G.players[p.id]={...p,caught:false,hp:100};
+        // Создаём спрайт если ещё нет
+        if(p.id!==myId&&!playerSprites[p.id]){
+          playerSprites[p.id]=sprToImgData(makeSprPlayer(p.color||'#ff6b6b'));
+        }
       });
       G.items=msg.items;
       updateHUD();
@@ -842,15 +846,15 @@ function loop(now){
   if(!G.caught){
     const speedMult=(G.adrenaline?2.1:1)*(G.sprinting&&G.stamina>0?1.6:1);
     const speed=3.2*speedMult*dt;
-    const fx=Math.sin(G.camYaw),fz=Math.cos(G.camYaw);
-    const rx=Math.cos(G.camYaw),rz=-Math.sin(G.camYaw);
+    const fx=Math.cos(G.camYaw),fz=Math.sin(G.camYaw);
+    const rx=-Math.sin(G.camYaw),rz=Math.cos(G.camYaw);
     let mx=0,mz=0;
     // Клавиатура
     if(G.keys.up){mx+=fx;mz+=fz;}
     if(G.keys.down){mx-=fx;mz-=fz;}
     if(G.keys.left)G.camYaw-=2*dt;
     if(G.keys.right)G.camYaw+=2*dt;
-    // Джойстик (вперёд/назад + стрейф)
+    // Джойстик: dy вверх (joyZ<0) = вперёд, joyX вправо = стрейф вправо
     if(Math.abs(G.joyX)>.08||Math.abs(G.joyZ)>.08){
       mx+=fx*(-G.joyZ)+rx*G.joyX;
       mz+=fz*(-G.joyZ)+rz*G.joyX;
@@ -967,7 +971,8 @@ function loop(now){
   sprites.push({x:20.5,z:.9,imgd:IEXIT,w:48,h:80,scale:1.0});
   // Другие игроки
   Object.values(G.players).forEach(p=>{
-    if(p.id===myId||!playerSprites[p.id])return;
+    if(p.id===myId)return;
+    if(!playerSprites[p.id])playerSprites[p.id]=sprToImgData(makeSprPlayer(p.color||'#4ecdc4'));
     sprites.push({x:p.x,z:p.z,imgd:playerSprites[p.id],w:32,h:64,scale:.9});
   });
   // Сортируем по расстоянию (дальние первыми)
