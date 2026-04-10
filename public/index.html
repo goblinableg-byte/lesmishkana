@@ -664,7 +664,16 @@ function handleMessage(msg){
 
     case 'game_state':
       G.mishkan=msg.mishkan;
-      msg.players.forEach(p=>{if(G.players[p.id]) Object.assign(G.players[p.id],p);});
+      msg.players.forEach(p=>{
+        if(!G.players[p.id]) return;
+        if(p.id===myId){
+          // Своего игрока НЕ телепортируем — только состояние
+          G.players[p.id].caught=p.caught;
+          G.players[p.id].hp=p.hp;
+        } else {
+          Object.assign(G.players[p.id],p);
+        }
+      });
       G.items=msg.items;
       updateHUD();
       if(G.players[myId]) G.myPlayer=G.players[myId];
@@ -778,8 +787,8 @@ function initControls(){
   document.addEventListener('touchmove',e=>{
     for(const t of e.changedTouches){
       if(t.identifier!==camId) continue;
-      G.camYaw-=(t.clientX-camLX)*SENS;
-      G.camPitch-=(t.clientY-camLY)*SENS*.5;
+      G.camYaw+=(t.clientX-camLX)*SENS;  // ✅ свайп вправо = поворот вправо
+      G.camPitch+=(t.clientY-camLY)*SENS*.5; // ✅ свайп вниз = смотрим вниз
       G.camPitch=Math.max(-.42,Math.min(.42,G.camPitch));
       camLX=t.clientX;camLY=t.clientY;
     }
@@ -826,7 +835,7 @@ function initControls(){
 }
 
 // ── GAME LOOP ──
-let lastSend=0,bobTimer=30,loopId=null,lastTS=0;
+let lastSend=0,bobTimer=30,loopId=null,lastTS=performance.now();
 
 function startGameClient(){
   showScreen('screen-game');
