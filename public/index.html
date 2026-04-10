@@ -82,14 +82,18 @@ input.inp:focus{border-color:#ff3030;}
 @keyframes screamShake{0%,100%{transform:translate(0,0);}10%{transform:translate(-8px,6px) rotate(-2deg);}20%{transform:translate(8px,-6px) rotate(2deg);}50%{transform:translate(4px,-2px);}80%{transform:translate(-2px,1px);}}
 /* CONTROLS */
 #controls{position:fixed;bottom:10px;left:0;right:0;display:flex;align-items:flex-end;justify-content:space-between;padding:0 14px;z-index:20;}
-#joystick-zone{width:128px;height:128px;position:relative;flex-shrink:0;touch-action:none;}
-#joystick-base{position:absolute;inset:0;border-radius:50%;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.17);}
-#joystick-knob{position:absolute;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.27);border:2px solid rgba(255,255,255,.42);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
-.action-btns{display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
-.action-btn{background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.22);border-radius:50%;width:60px;height:60px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;-webkit-tap-highlight-color:transparent;color:#c8d8b0;font-family:'VT323',monospace;touch-action:none;}
+/* ДЖОЙСТИК — большой */
+#joystick-zone{width:160px;height:160px;position:relative;flex-shrink:0;touch-action:none;}
+#joystick-base{position:absolute;inset:0;border-radius:50%;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.2);}
+#joystick-knob{position:absolute;width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.3);border:2px solid rgba(255,255,255,.5);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+/* Спринт — слева над джойстиком */
+#sprint-left{position:fixed;bottom:185px;left:14px;pointer-events:all;z-index:21;}
+#sprint-left button{background:rgba(0,60,0,.6);border:2px solid #3a7a3a;border-radius:12px;width:70px;height:36px;display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;-webkit-tap-highlight-color:transparent;color:#50ff50;font-family:'VT323',monospace;touch-action:none;letter-spacing:1px;}
+#sprint-left button:active{background:rgba(0,120,0,.6);}
+.action-btns{display:flex;flex-direction:column;gap:10px;align-items:flex-end;}
+.action-btn{background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.22);border-radius:50%;width:62px;height:62px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;-webkit-tap-highlight-color:transparent;color:#c8d8b0;font-family:'VT323',monospace;touch-action:none;}
 .action-btn:active{background:rgba(255,255,255,.2);}
 #btn-interact{border-color:#b89030;}
-#btn-sprint{border-color:#3a7a3a;}
 #btn-cross{border-color:#6666ff;}
 #screen-end{background:radial-gradient(ellipse at center,#1a0000 0%,#000 70%);z-index:200;}
 #screen-end h1{font-family:'Creepster',cursive;font-size:3rem;color:#ff3030;text-align:center;margin-bottom:1rem;}
@@ -105,6 +109,7 @@ input.inp:focus{border-color:#ff3030;}
   <p>horror · multiplayer · forest</p>
   <button class="btn" onclick="showCreate()">СОЗДАТЬ ЛОББИ</button>
   <button class="btn btn-green" onclick="showJoin()">ВОЙТИ В ЛОББИ</button>
+  <button class="btn" onclick="toggleFullscreen()" style="border-color:#555;color:#888;font-size:1.1rem;margin-top:.5rem">⛶ ПОЛНЫЙ ЭКРАН</button>
 </div>
 <div id="screen-create" class="screen">
   <h2 style="font-family:'Creepster',cursive;font-size:2rem;color:#ff3030;margin-bottom:1rem">СОЗДАТЬ ЛОББИ</h2>
@@ -170,12 +175,12 @@ input.inp:focus{border-color:#ff3030;}
   <div id="overlay-screamer">
     <img src="https://image2url.com/r2/default/files/1775503421307-9e71057d-b620-4800-9c13-8e055aeefc40.jpg" alt="">
   </div>
+  <div id="sprint-left"><button id="btn-sprint">⚡ БЕГ</button></div>
   <div id="controls">
     <div id="joystick-zone"><div id="joystick-base"></div><div id="joystick-knob"></div></div>
     <div class="action-btns">
       <button class="action-btn" id="btn-cross">✝</button>
       <button class="action-btn" id="btn-interact">E</button>
-      <button class="action-btn" id="btn-sprint">⚡</button>
     </div>
   </div>
 </div>
@@ -188,6 +193,21 @@ input.inp:focus{border-color:#ff3030;}
 
 <script>
 'use strict';
+
+// ══ FULLSCREEN ══
+function toggleFullscreen(){
+  if(!document.fullscreenElement){
+    document.documentElement.requestFullscreen().catch(()=>{});
+  } else {
+    document.exitFullscreen().catch(()=>{});
+  }
+}
+// Авто-фуллскрин при старте игры на мобиле
+function tryFullscreen(){
+  if(!document.fullscreenElement&&/Android|iPhone/i.test(navigator.userAgent)){
+    document.documentElement.requestFullscreen().catch(()=>{});
+  }
+}
 
 // ══ ТЕКСТУРА МИШКАНА (загружаем заранее) ══
 const mishkanImg = new Image();
@@ -273,6 +293,7 @@ const G={
   fallingObjects:[],
   escapeAudioStarted:false,
   stuned:false, stunTimer:0,
+  escapeRunPhase2:false,
   hasCross:false,
   crossUsing:false, crossAnim:0,
   mishkanBanished:false, mishkanBanishTimer:0,
@@ -408,7 +429,10 @@ function renderScene(){
   const sprites=[];
   G.items.forEach(item=>{if(!item.collected) sprites.push({x:item.x,z:item.z,type:item.type,data:item});});
   Object.values(G.players).forEach(p=>{if(p.id!==myId) sprites.push({x:p.x,z:p.z,type:'player',data:p});});
-  if(!G.mishkan.banished) sprites.push({x:G.mishkan.x,z:G.mishkan.z,type:'mishkan',data:G.mishkan});
+  if(!G.mishkan.banished){
+    const mData={...G.mishkan, riseY: G.escapeMishkanY||0};
+    sprites.push({x:G.mishkan.x,z:G.mishkan.z,type:'mishkan',data:mData});
+  }
 
   // Падающие объекты (финал)
   G.fallingObjects.forEach(obj=>{sprites.push({x:obj.x,z:obj.z,type:'falling',data:obj});});
@@ -425,15 +449,23 @@ function renderScene(){
     if(Math.abs(rel)>halfFOV*1.15) return;
 
     const scrX=Math.floor(W/2+(rel/halfFOV)*(W/2));
-    const scale=sp.type==='mishkan'?1.3:(sp.type==='player'?0.9:(sp.type==='falling'?0.7:0.65));
+    const scale=sp.type==='mishkan'?1.35:(sp.type==='player'?0.95:(sp.type==='falling'?0.8:0.7));
     const sh=Math.min(H*2.5,Math.floor((H/dist)*scale));
-    const sw=Math.floor(sh*(sp.type==='mishkan'?0.85:sp.type==='player'?0.6:0.5));
+    const sw=Math.floor(sh*(sp.type==='mishkan'?0.85:sp.type==='player'?0.6:0.52));
     const sLeft=scrX-Math.floor(sw/2);
-    // Вертикальный сдвиг для pitch
-    const pitchOffset=Math.floor(G.camPitch*H*0.5);
-    // Падающий объект имеет дополнительный Y-offset
+    // ✅ ИСПРАВЛЕНО: низ спрайта стоит на ПОЛУ (горизонте)
+    // horizon = H/2 - camPitch*H*0.5
+    // Пол на экране = horizon (для объектов на уровне земли)
     const fallY=sp.type==='falling'?(sp.data.y||0):0;
-    const sTop=Math.floor(horizon-sh*(sp.type==='mishkan'?0.92:0.85)) + (fallY>0?-Math.floor(fallY*sh*0.4):0);
+    // Для объектов на полу: top = horizon - sh (верх), bottom = horizon (пол)
+    // Для падающих: смещаем вверх на (y * высота_стены * коэф)
+    const floorY = horizon; // пол на экране
+    // riseY: 0=на полу, -1.5=под землёй (при катсцене)
+    const riseY=sp.type==='mishkan'?(sp.data.riseY||0):0;
+    const riseOffset=riseY<0?Math.floor(-riseY*sh*0.5):0; // смещение вниз при подъёме
+    const sTop = sp.type==='falling'
+      ? Math.floor(floorY - sh - fallY*sh*0.6)
+      : Math.floor(floorY - sh + riseOffset);
     const bright=Math.max(0.07,1-dist/16);
 
     for(let sx2=0;sx2<sw;sx2++){
@@ -444,8 +476,8 @@ function renderScene(){
     }
   });
 
-  // ── ВОРОТА ──
-  drawExit(ctx, px, pz, yaw, horizon, halfFOV, W, H);
+  // ── ВОРОТА — рисуем только если НЕ скрыты или во время побега ──
+  if(!G.exitHidden || G.escapeActive) drawExit(ctx, px, pz, yaw, horizon, halfFOV, W, H);
 
   // Виньетка
   const vig=ctx.createRadialGradient(W/2+shakeX,H/2+shakeY,H*.22,W/2+shakeX,H/2+shakeY,H*.75);
@@ -625,8 +657,8 @@ function renderMinimap(){
   ctx.fillStyle='rgba(0,220,60,.75)';
   ctx.fillRect(14*C,0,4*C,C*.7);
 
-  // Зона сбора (мигает желтым когда все страницы собраны)
-  if(G.allPagesCollected){
+  // Зона сбора (мигает желтым когда выход скрыт)
+  if(G.exitHidden&&!G.escapeActive){
     const glow=(Math.sin(Date.now()*.005)+1)*.5;
     ctx.globalAlpha=0.35+glow*.4;
     ctx.fillStyle='#ffc800';
@@ -771,75 +803,187 @@ function handleMessage(msg){
       showBobik('Мишкан изгнан на 30 секунд!');
       break;
 
+    case 'exit_hidden':
+      G.exitHidden=true;
+      showBobik('Все страницы собраны! Мишкан исчез — соберитесь на ЖЕЛТОЙ ТОЧКЕ на юге!');
+      break;
     case 'game_won': showEndScreen(true); break;
     case 'game_lost': showEndScreen(false); break;
   }
 }
 
-// ══ КАТСЦЕНА ПОБЕГА ══
+// ══ КАТСЦЕНА И ФИНАЛЬНЫЙ ПОБЕГ ══
+// Фазы по audio.currentTime:
+// 0 - 4.5с: Мишкан поднимается из земли, камера на него, inputDisabled
+// 4.5 - 9с: карта пересобирается в коридор, нарастающая тряска
+// 9 - 9.5с: плавный переход, FOV начинает расширяться
+// 9.5с: управление возвращается, мишкан даёт фору (стоит 25с)
+// 25с: экран краснеет, FOV расширяется, препятствия начинают падать, мишкан бежит
+// 101с: все кто не добежал — пойманы
+
+let escapeIv=null, fallingIv=null;
+
 function startEscapeSequence(){
   G.escapeActive=true;
   G.inputDisabled=true;
-  // Запускаем музыку побега
-  if(AUDIO.bg){AUDIO.bg.pause();}
-  AUDIO.escape.play().catch(()=>{});
-  G.escapeAudioStarted=true;
-  showBobik('БЕГИТЕ! МИШКАН ВЫХОДИТ!!!');
+  G.escapeMishkanRising=true; // мишкан поднимается из земли
+  G.escapeMishkanY=-1.5; // начальная позиция под землёй (для рендера)
 
-  // Тряска нарастает 9.5 секунд
-  let shakeIntensity=0;
-  const shakeIv=setInterval(()=>{
-    shakeIntensity+=0.3;
-    const si=Math.min(shakeIntensity,8);
-    G.screenShakeX=(Math.random()-0.5)*si*2;
-    G.screenShakeY=(Math.random()-0.5)*si*2;
-  },50);
+  // Стоп эмбиент
+  if(AUDIO.bg){ AUDIO.bg.pause(); AUDIO.bg.currentTime=0; }
 
-  // Камера плавно разворачивается к Мишкану (на 180°)
+  // Запуск музыки побега
+  const esc=AUDIO.escape;
+  esc.currentTime=0;
+  esc.volume=0.9;
+  esc.play().catch(()=>{});
+
+  showBobik('МИШКАН ПОДНИМАЕТСЯ...');
+
+  // Камера разворачивается к Мишкану за 4 секунды
   const startYaw=G.camYaw;
-  const targetYaw=startYaw+Math.PI;
-  const startT=performance.now();
-  const rotateDur=4000;
-  function rotateCamera(){
-    const elapsed=(performance.now()-startT)/rotateDur;
-    if(elapsed<1){
-      G.camYaw=startYaw+Math.PI*Math.min(1,elapsed*1.2);
-      requestAnimationFrame(rotateCamera);
-    }
-  }
-  rotateCamera();
+  // Направление на мишкана
+  const dm_x=G.mishkan.x-(G.myPlayer?.x||17);
+  const dm_z=G.mishkan.z-(G.myPlayer?.z||30);
+  const targetYaw=Math.atan2(dm_x,dm_z);
+  let yawNormDiff=targetYaw-startYaw;
+  while(yawNormDiff>Math.PI) yawNormDiff-=Math.PI*2;
+  while(yawNormDiff<-Math.PI) yawNormDiff+=Math.PI*2;
+  const t0=performance.now();
 
-  // Через 9.5 секунды — возвращаем управление и начинаем падающие объекты
-  setTimeout(()=>{
-    clearInterval(shakeIv);
-    G.screenShakeX=0; G.screenShakeY=0;
+  function cutsceneUpdate(){
+    if(!G.escapeActive||!esc) return;
+    const ct=esc.currentTime;
+
+    // 0-4.5с: камера на мишкана, мишкан поднимается
+    if(ct<4.5){
+      const progress=ct/4.5;
+      G.camYaw=startYaw+yawNormDiff*Math.min(1,progress*1.4);
+      G.camPitch=-0.15+Math.sin(progress*Math.PI)*0.1;
+      // Мишкан поднимается: y от -1.5 до 0
+      G.escapeMishkanY=-1.5+progress*1.5;
+      G.screenShakeX=(Math.random()-0.5)*progress*3;
+      G.screenShakeY=(Math.random()-0.5)*progress*3;
+      requestAnimationFrame(cutsceneUpdate);
+      return;
+    }
+
+    // 4.5-9с: тряска усиливается, карта меняется (уже изменена сервером)
+    if(ct<9.0){
+      const progress=(ct-4.5)/4.5;
+      G.escapeMishkanY=0;
+      G.screenShakeX=(Math.random()-0.5)*progress*10;
+      G.screenShakeY=(Math.random()-0.5)*progress*10;
+      // Нарастание красного
+      document.getElementById('overlay-red').style.background=`rgba(139,0,0,${progress*0.3})`;
+      requestAnimationFrame(cutsceneUpdate);
+      return;
+    }
+
+    // 9-9.5с: финальный момент
+    if(ct<9.5){
+      G.screenShakeX=(Math.random()-0.5)*8;
+      G.screenShakeY=(Math.random()-0.5)*8;
+      requestAnimationFrame(cutsceneUpdate);
+      return;
+    }
+
+    // ≥9.5с: УПРАВЛЕНИЕ ВОЗВРАЩАЕТСЯ
     G.inputDisabled=false;
-    G.camYaw=targetYaw;
-    startFallingObjects();
-    // Таймер отсчёта
-    let timeLeft=Math.floor(101.5-9.5);
-    const timerEl=document.getElementById('escape-timer');
-    timerEl.style.display='block';
-    const countIv=setInterval(()=>{
-      timeLeft--;
-      timerEl.textContent=`⏰ ${Math.floor(timeLeft/60)}:${String(timeLeft%60).padStart(2,'0')}`;
-      if(timeLeft<=0){clearInterval(countIv);timerEl.style.display='none';}
-    },1000);
-    showBobik('БЕГИТЕ К ВЫХОДУ! У вас 1:32!');
-  },9500);
+    G.escapeMishkanRising=false;
+    G.escapeMishkanY=0;
+    G.screenShakeX=0; G.screenShakeY=0;
+    G.camPitch=0;
+    // Камера вперёд — к выходу на север
+    G.camYaw=0; // смотрим на север (к выходу)
+
+    // Показываем таймер (от 9.5 до 101)
+    showEscapeTimer(esc);
+
+    // Мишкан стоит на месте до 25с трека — даём фору
+    showBobik('БЕГИТЕ К ВЫХОДУ! У вас 1:31!');
+
+    // Слушаем audio.currentTime в цикле
+    escapeIv=setInterval(()=>{
+      if(!esc) return;
+      const ct2=esc.currentTime;
+
+      // 9.5 - 25с: FOV нормальный, мишкан стоит (сервер управляет)
+      if(ct2<25){
+        FOV=Math.PI/2.5;
+        document.getElementById('overlay-red').style.background='rgba(139,0,0,0.05)';
+      }
+
+      // 25с: ПАНИКА
+      if(ct2>=25&&ct2<26&&!G.escapeRunPhase2){
+        G.escapeRunPhase2=true;
+        // Резкое покраснение
+        document.getElementById('overlay-red').style.background='rgba(139,0,0,0.5)';
+        setTimeout(()=>document.getElementById('overlay-red').classList.add('active'),0);
+        // FOV расширяется
+        FOV=Math.PI/1.6;
+        // Препятствия начинают падать
+        startFallingObjects();
+        // Тряска
+        G.screenShakeX=8; G.screenShakeY=8;
+        setTimeout(()=>{G.screenShakeX=0;G.screenShakeY=0;},500);
+        showBobik('МИШКАН БЕЖИТ! УХОДИ!!!');
+        // Сообщаем серверу что мишкан должен бежать
+        send({type:'escape_phase2'});
+      }
+
+      // 25-101с: нарастающая паника, FOV широкий
+      if(ct2>=26&&ct2<101){
+        const panic=(ct2-25)/76;
+        // Случайная тряска с нарастанием
+        if(Math.random()<0.1+panic*0.2){
+          G.screenShakeX=(Math.random()-0.5)*panic*6;
+          G.screenShakeY=(Math.random()-0.5)*panic*6;
+        }
+        // Хроматическая аберрация через overlay
+        const aberr=Math.floor(panic*60);
+        document.getElementById('overlay-red').style.background=`rgba(139,0,0,${0.1+panic*0.3})`;
+      }
+
+      // 101с: конец — сервер убивает оставшихся
+      if(ct2>=101&&!G.escapeEnded){
+        G.escapeEnded=true;
+        clearInterval(escapeIv);
+        if(fallingIv){clearInterval(fallingIv);}
+      }
+
+    },100);
+  }
+  requestAnimationFrame(cutsceneUpdate);
+}
+
+function showEscapeTimer(esc){
+  const timerEl=document.getElementById('escape-timer');
+  timerEl.style.display='block';
+  const upd=()=>{
+    if(!esc||!G.escapeActive){timerEl.style.display='none';return;}
+    const left=Math.max(0,101-esc.currentTime);
+    timerEl.textContent=`⏰ ${Math.floor(left/60)}:${String(Math.floor(left%60)).padStart(2,'0')}`;
+    if(left>0) requestAnimationFrame(upd);
+    else timerEl.style.display='none';
+  };
+  requestAnimationFrame(upd);
 }
 
 function startFallingObjects(){
   G.fallingObjects=[];
-  const iv=setInterval(()=>{
+  // Спавним камни в коридоре впереди игрока
+  fallingIv=setInterval(()=>{
     if(!G.escapeActive||!G.myPlayer) return;
-    // Добавляем камень впереди игрока
-    const offset=(Math.random()-0.5)*8;
-    const fwdX=G.myPlayer.x+Math.sin(G.camYaw)*5+offset;
-    const fwdZ=G.myPlayer.z+Math.cos(G.camYaw)*5+offset;
-    G.fallingObjects.push({x:fwdX,z:fwdZ,y:1.8,id:Date.now()});
+    // Несколько камней в коридоре
+    const count=1+Math.floor(Math.random()*2);
+    for(let i=0;i<count;i++){
+      const fwdZ=G.myPlayer.z-3-Math.random()*6; // впереди (на север)
+      const fwdX=13+Math.random()*6; // в пределах коридора x=13-19
+      if(fwdZ<1||fwdZ>34) continue;
+      G.fallingObjects.push({x:fwdX, z:fwdZ, y:1.8, vy:1.5+Math.random()*0.5, id:Date.now()+i});
+    }
   },1500);
-  // Обновление падения в gameLoop
 }
 
 // ══ HUD ══
@@ -867,7 +1011,12 @@ let mzTO=null, lastInView=false;
 function updateMishkanFX(){
   if(!G.myPlayer||G.caught) return;
   const dist=d2(G.myPlayer,G.mishkan);
-  if(!G.mishkan.banished) setBgVol(.04+Math.max(0,1-dist/22)*.76);
+  if(G.mishkan.banished){
+    // Мишкан изгнан — эмбиент плавно тихнет
+    if(AUDIO.bg) AUDIO.bg.volume=Math.max(0,AUDIO.bg.volume-0.02);
+  } else {
+    setBgVol(.04+Math.max(0,1-dist/22)*.76);
+  }
   const pulse=document.getElementById('overlay-pulse');
   if(dist<8&&!G.mishkan.banished){pulse.classList.add('beating');pulse.style.animationDuration=`${Math.max(.25,.85-(8-dist)*.08)}s`;}
   else pulse.classList.remove('beating');
@@ -906,7 +1055,7 @@ function useCross(){
     G.crossAnim=Math.min(1,t);
     if(t<1) requestAnimationFrame(animCross);
     else {
-      // Посылаем событие на сервер
+      // Посылаем событие на сервер (мишкан заморожен сразу)
       send({type:'use_cross'});
       playAudio('banish');
       // Синий overlay
@@ -971,7 +1120,7 @@ function initControls(){
       if(t.identifier!==camId) continue;
       if(G.inputDisabled) continue;
       G.camYaw+=(t.clientX-camLX)*SENS;
-      G.camPitch-=(t.clientY-camLY)*SENS*.5;
+      G.camPitch+=(t.clientY-camLY)*SENS*.5; // ✅ свайп вниз = смотрим вниз
       G.camPitch=Math.max(-.5,Math.min(.5,G.camPitch));
       camLX=t.clientX; camLY=t.clientY;
     }
@@ -997,8 +1146,12 @@ function initControls(){
   // Кнопки
   document.getElementById('btn-interact').addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();G.interact=true;},{passive:false});
   document.getElementById('btn-interact').addEventListener('touchend',e=>{e.preventDefault();G.interact=false;},{passive:false});
-  document.getElementById('btn-sprint').addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();G.sprinting=true;},{passive:false});
-  document.getElementById('btn-sprint').addEventListener('touchend',e=>{e.preventDefault();G.sprinting=false;},{passive:false});
+  // Sprint — новое место (слева)
+  const sprintBtn=document.getElementById('btn-sprint');
+  if(sprintBtn){
+    sprintBtn.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();G.sprinting=true;},{passive:false});
+    sprintBtn.addEventListener('touchend',e=>{e.preventDefault();G.sprinting=false;},{passive:false});
+  }
   document.getElementById('btn-cross').addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();useCross();},{passive:false});
 
   // Клавиатура
@@ -1024,10 +1177,19 @@ function initControls(){
   });
 }
 
+// ══ ПРОВЕРКА ПОЗИЦИИ НА КАРТЕ ══
+function isFree(x,z){
+  if(!G.map) return true;
+  const mx=Math.floor(x), mz=Math.floor(z);
+  if(mz<0||mz>=36||mx<0||mx>=36) return false;
+  return G.map[mz][mx]===0;
+}
+
 // ══ GAME LOOP ══
 let lastSend=0, bobTimer=30, loopId=null, lastTS=performance.now();
 
 function startGameClient(){
+  tryFullscreen();
   showScreen('screen-game');
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     initRC(); initMinimap(); buildPagesHUD(); initControls();
@@ -1056,9 +1218,25 @@ function gameLoop(ts){
 
   // Геймпад
   pollGamepad();
+  // Escape FOV handling
+  if(G.escapeActive){
+    if(G.inputDisabled){
+      // Катсцена — нормальный FOV
+      FOV=Math.PI/2.5;
+    } else if(G.escapeRunPhase2){
+      // Фаза 2 — широкий FOV как в ужасе
+      const targetFov=Math.PI/1.5;
+      FOV+=(targetFov-FOV)*0.05;
+    } else {
+      // Фаза 1 (до 25с) — нормальный FOV
+      FOV=Math.PI/2.5;
+    }
+  }
 
   if(!G.caught&&!G.inputDisabled&&!G.stuned){
-    const spd=(G.adrenaline?2.3:1)*(G.sprinting&&G.stamina>0?1.65:1)*3.0*dt;
+    // Во время финального побега — скорость максимальная автоматически
+    const escapeBoost=G.escapeActive&&G.escapeRunPhase2?1.6:1.0;
+    const spd=(G.adrenaline?2.0:1)*(G.sprinting&&G.stamina>0?1.5:1)*2.8*dt*escapeBoost;
     const fx=Math.sin(G.camYaw), fz=Math.cos(G.camYaw);
     const rx=Math.cos(G.camYaw), rz=-Math.sin(G.camYaw);
     let mx=0, mz=0;
@@ -1089,9 +1267,13 @@ function gameLoop(ts){
       if(G.map[cz]&&G.map[cz][Math.floor(nx+bpad*(mx/len))]!==1) G.myPlayer.x=nx;
       if(G.map[Math.floor(nz+bpad*(mz/len))]&&G.map[Math.floor(nz+bpad*(mz/len))][cx]!==1) G.myPlayer.z=nz;
     }
-    // Стамина
-    if(G.sprinting&&moving) G.stamina=Math.max(0,G.stamina-22*dt);
-    else G.stamina=Math.min(100,G.stamina+12*dt);
+    // Стамина (во время побега не тратится)
+    if(!G.escapeActive){
+      if(G.sprinting&&moving) G.stamina=Math.max(0,G.stamina-22*dt);
+      else G.stamina=Math.min(100,G.stamina+12*dt);
+    } else {
+      G.stamina=100; // полная стамина во время побега
+    }
     document.getElementById('stamina-fill').style.width=G.stamina+'%';
     // Адреналин
     if(G.adrenaline){G.adrenalineTimer-=dt*1000;document.getElementById('adrenaline-fill').style.width=Math.max(0,G.adrenalineTimer/80)+'%';if(G.adrenalineTimer<=0){G.adrenaline=false;document.getElementById('adrenaline-bar').style.display='none';}}
@@ -1109,8 +1291,7 @@ function gameLoop(ts){
     if(nearItem) document.getElementById('near-item').textContent=nearData.type==='page'?'[ E ] Взять страницу':nearData.type==='energo'?'[ E ] Выпить энергос':'[ E ] Взять крест';
     document.getElementById('exit-indicator').style.display=(G.allPagesCollected&&d2(G.myPlayer,EXIT_POS)<2.5)?'block':'none';
     // Зона сбора
-    const inGather=G.allPagesCollected&&d2(G.myPlayer,GATHER_POS)<5;
-    document.getElementById('gather-indicator').style.display=(G.allPagesCollected&&!G.escapeActive)?'block':'none';
+    document.getElementById('gather-indicator').style.display=(G.exitHidden&&!G.escapeActive)?'block':'none';
 
     if(G.interact){
       Object.values(G.players).forEach(p=>{if(p.caught&&p.id!==myId&&d2(G.myPlayer,p)<2.5)send({type:'heal_player',targetId:p.id});});
@@ -1136,19 +1317,17 @@ function gameLoop(ts){
   }
 
   // Падающие объекты
-  if(G.escapeActive){
+  if(G.escapeActive&&G.escapeRunPhase2){
     G.fallingObjects=G.fallingObjects.filter(obj=>{
-      obj.y-=dt*1.2;
+      obj.y-=dt*(obj.vy||1.4);
       if(obj.y<=0){
-        obj.y=0;
-        // Проверяем коллизию с игроком
-        if(G.myPlayer&&d2(G.myPlayer,obj)<0.9&&!G.stuned){
+        if(G.myPlayer&&d2(G.myPlayer,obj)<1.0&&!G.stuned){
           G.stuned=true; G.stunTimer=1.5;
-          G.screenShakeX=4; G.screenShakeY=4;
-          setTimeout(()=>{G.screenShakeX=0;G.screenShakeY=0;},300);
-          showBobik('Камень! Оглушён!');
+          G.screenShakeX=6; G.screenShakeY=6;
+          setTimeout(()=>{G.screenShakeX=0;G.screenShakeY=0;},400);
+          showBobik('💥 Камень! Оглушён на 1.5с!');
         }
-        return false;
+        return false; // удаляем после удара
       }
       return true;
     });
