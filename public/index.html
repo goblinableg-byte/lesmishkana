@@ -474,29 +474,134 @@ function renderScene(){
 // Рисует 1px вертикальную полосу спрайта
 function drawSpriteStrip(ctx,type,data,x,top,height,u,bright){
   if(type==='mishkan'){
-    const eyeT=Math.floor(top+height*.25);
-    const eyeH=Math.floor(height*.13);
-    const isEye=(Math.abs(u-.28)<.07||Math.abs(u-.72)<.07);
-    const isArm=(u<.1||u>.9);
-    if(isEye){
-      // Тело над глазами
-      ctx.fillStyle=`rgba(${Math.floor(28*bright)},${Math.floor(10*bright)},0,${bright})`;
-      ctx.fillRect(x,top,1,eyeT-top);
-      // Глаз
-      const pulse=(Math.sin(Date.now()*.003)+1)*.5;
-      ctx.fillStyle=`rgba(255,${Math.floor(20*bright)},0,${Math.min(1,bright+pulse*.3)})`;
-      ctx.fillRect(x,eyeT,1,eyeH);
-      // Тело под глазами
-      ctx.fillStyle=`rgba(${Math.floor(24*bright)},${Math.floor(8*bright)},0,${bright})`;
-      ctx.fillRect(x,eyeT+eyeH,1,Math.floor(height*.65)-(eyeT-top)-eyeH);
-    } else if(isArm){
-      ctx.fillStyle=`rgba(${Math.floor(20*bright)},${Math.floor(8*bright)},0,${bright})`;
-      ctx.fillRect(x,Math.floor(top+height*.3),1,Math.floor(height*.45));
+    // Мишкан: детальная 2.5D текстура спанч боба-монстра
+    const t = Date.now();
+    const pulse = (Math.sin(t*0.003)+1)*0.5;
+    // Зоны по u (горизонталь):
+    // 0.00-0.08 левая рука    0.08-0.92 тело    0.92-1.0 правая рука
+    // Зоны по height (вертикаль):
+    // 0-15% голова-нос  15-30% глаза  30-45% нос/рот  45-90% тело  90-100% ноги
+    const isLeftArm  = u < 0.10;
+    const isRightArm = u > 0.90;
+    const isBody     = !isLeftArm && !isRightArm;
+    const relY = (y) => (y - top) / Math.max(1, height);
+
+    if(isLeftArm || isRightArm){
+      // Руки — тёмно-жёлтые, длинные
+      const armTop  = Math.floor(top + height*0.38);
+      const armH    = Math.floor(height*0.42);
+      ctx.fillStyle = `rgba(${Math.floor(60*bright)},${Math.floor(45*bright)},0,${bright*0.9})`;
+      ctx.fillRect(x, armTop, 1, armH);
+      // Кисть
+      ctx.fillStyle = `rgba(${Math.floor(50*bright)},${Math.floor(38*bright)},0,${bright})`;
+      ctx.fillRect(x, armTop+armH, 1, Math.floor(height*0.08));
+      return;
+    }
+
+    // === ТЕЛО (isBody) ===
+    // Высота всего спрайта делится на зоны
+    const hh = height; // полная высота
+    const bodyTop  = top;
+    const eyeZone  = Math.floor(top + hh*0.18);
+    const mouthZ   = Math.floor(top + hh*0.36);
+    const beltZ    = Math.floor(top + hh*0.50);
+    const shoeZ    = Math.floor(top + hh*0.82);
+    const botZ     = Math.floor(top + hh*0.92);
+
+    // -- Голова (жёлтая рваная губка) --
+    const spongeNoise = ((Math.floor(u*18+2))%5===0) ? 0.75 : 1.0;
+    const headR = Math.floor(180*bright*spongeNoise);
+    const headG = Math.floor(155*bright*spongeNoise);
+    ctx.fillStyle = `rgba(${headR},${headG},0,${bright})`;
+    ctx.fillRect(x, bodyTop, 1, eyeZone - bodyTop);
+
+    // -- Дырки-поры на голове --
+    const poreRow = Math.floor(u*12);
+    const isPore = (poreRow%4===1) && ((Math.floor(u*20+1))%5===0);
+    if(isPore && eyeZone - bodyTop > 4){
+      ctx.fillStyle = `rgba(${Math.floor(90*bright)},${Math.floor(70*bright)},0,${bright})`;
+      const poreY = Math.floor(bodyTop + (eyeZone-bodyTop)*0.5);
+      ctx.fillRect(x, poreY, 1, Math.max(1, Math.floor((eyeZone-bodyTop)*0.3)));
+    }
+
+    // -- Глаза (большие красные с зрачком) --
+    const isLeftEye  = (u>0.22 && u<0.42);
+    const isRightEye = (u>0.58 && u<0.78);
+    const eyeH = Math.floor(hh*0.17);
+    if(isLeftEye || isRightEye){
+      // Белок
+      ctx.fillStyle = `rgba(${Math.floor(220*bright)},${Math.floor(180*bright)},${Math.floor(180*bright)},${bright})`;
+      ctx.fillRect(x, eyeZone, 1, eyeH);
+      // Красный зрачок посередине глаза
+      const isCenter = (isLeftEye && u>0.28 && u<0.36)||(isRightEye && u>0.64 && u<0.72);
+      if(isCenter){
+        const pupilY = Math.floor(eyeZone + eyeH*0.25);
+        const pupilH = Math.floor(eyeH*0.5);
+        ctx.fillStyle = `rgba(255,${Math.floor(20*bright)},0,${Math.min(1,bright+pulse*0.4)})`;
+        ctx.fillRect(x, pupilY, 1, pupilH);
+        // Блик
+        ctx.fillStyle = `rgba(255,255,255,${bright*0.6})`;
+        ctx.fillRect(x, pupilY, 1, Math.max(1,Math.floor(pupilH*0.25)));
+      }
+      // Тело губки под глазом (до рта)
+      ctx.fillStyle = `rgba(${Math.floor(170*bright)},${Math.floor(145*bright)},0,${bright})`;
+      ctx.fillRect(x, eyeZone+eyeH, 1, mouthZ-(eyeZone+eyeH));
     } else {
-      // Дырки-поры
-      const isHole=((Math.floor(u*8)%3===0)&&(Math.floor(Date.now()/2000+u*5)%4===0));
-      ctx.fillStyle=isHole?`rgba(${Math.floor(8*bright)},${Math.floor(3*bright)},0,${bright})`:`rgba(${Math.floor(28*bright)},${Math.floor(12*bright)},0,${bright})`;
-      ctx.fillRect(x,top,1,Math.floor(height*.85));
+      // Нос между глазами
+      ctx.fillStyle = `rgba(${Math.floor(160*bright)},${Math.floor(135*bright)},0,${bright})`;
+      ctx.fillRect(x, eyeZone, 1, mouthZ-eyeZone);
+      // Нос — маленький выступ
+      if(Math.abs(u-0.50)<0.05){
+        ctx.fillStyle = `rgba(${Math.floor(140*bright)},${Math.floor(110*bright)},0,${bright})`;
+        ctx.fillRect(x, eyeZone+Math.floor(eyeH*0.3), 1, Math.floor(eyeH*0.5));
+      }
+    }
+
+    // -- Рот (зубы + темнота) --
+    const mouthH = Math.floor(hh*0.08);
+    const isToothZone = u>0.25 && u<0.75;
+    if(isToothZone){
+      const toothIdx = Math.floor((u-0.25)/0.1);
+      const isTooth  = (toothIdx%2===0);
+      ctx.fillStyle = isTooth
+        ? `rgba(${Math.floor(220*bright)},${Math.floor(210*bright)},${Math.floor(180*bright)},${bright})`
+        : `rgba(${Math.floor(20*bright)},${Math.floor(8*bright)},0,${bright})`;
+      ctx.fillRect(x, mouthZ, 1, mouthH);
+    } else {
+      ctx.fillStyle = `rgba(${Math.floor(25*bright)},${Math.floor(10*bright)},0,${bright})`;
+      ctx.fillRect(x, mouthZ, 1, mouthH);
+    }
+
+    // -- Тело (квадратная губка, жёлтая) --
+    const bodyH = shoeZ - (mouthZ+mouthH);
+    const bodyR = Math.floor(175*bright*(((Math.floor(u*14))%3===0)?0.82:1.0));
+    const bodyG = Math.floor(148*bright*(((Math.floor(u*14))%3===0)?0.82:1.0));
+    ctx.fillStyle = `rgba(${bodyR},${bodyG},0,${bright})`;
+    ctx.fillRect(x, mouthZ+mouthH, 1, bodyH);
+    // Поры на теле
+    const bPore = ((Math.floor(u*16))%4===1);
+    if(bPore && bodyH>4){
+      ctx.fillStyle = `rgba(${Math.floor(80*bright)},${Math.floor(65*bright)},0,${bright})`;
+      const py = mouthZ+mouthH+Math.floor(bodyH*0.4);
+      ctx.fillRect(x, py, 1, Math.max(1,Math.floor(bodyH*0.2)));
+    }
+    // Пояс (полоска)
+    if(Math.abs(u-0.5)<0.4){
+      ctx.fillStyle = `rgba(${Math.floor(100*bright)},${Math.floor(60*bright)},${Math.floor(10*bright)},${bright*0.8})`;
+      ctx.fillRect(x, beltZ, 1, Math.max(2,Math.floor(hh*0.04)));
+    }
+
+    // -- Ноги (коричневые штаны) --
+    const legH = botZ - shoeZ;
+    // Две ноги с зазором
+    const isLeftLeg  = u>0.22 && u<0.44;
+    const isRightLeg = u>0.56 && u<0.78;
+    if(isLeftLeg || isRightLeg){
+      ctx.fillStyle = `rgba(${Math.floor(100*bright)},${Math.floor(60*bright)},${Math.floor(10*bright)},${bright})`;
+      ctx.fillRect(x, shoeZ, 1, legH);
+      // Ботинки
+      ctx.fillStyle = `rgba(${Math.floor(30*bright)},${Math.floor(20*bright)},${Math.floor(50*bright)},${bright})`;
+      ctx.fillRect(x, botZ, 1, Math.floor(hh*0.08));
     }
   } else if(type==='player'){
     const c=hexRgb(data.color||'#ff6b6b');
@@ -523,6 +628,27 @@ function drawSpriteStrip(ctx,type,data,x,top,height,u,bright){
         ctx.fillStyle=`rgba(${Math.floor(80*bright)},${Math.floor(60*bright)},${Math.floor(10*bright)},${bright*.7})`;
         ctx.fillRect(x,top+li*lineY,1,1);
       }
+    }
+  } else if(type==='cross'){
+    // Крест — белое свечение
+    const glow=(Math.sin(Date.now()*.004+u*4)+1)*.5;
+    const isVertBar = (u>0.42 && u<0.58);
+    const isHorizBar = true; // горизонтальная перекладина посередине
+    const crossTop = Math.floor(top+height*0.08);
+    const crossH   = Math.floor(height*0.75);
+    const horizY   = Math.floor(top+height*0.28);
+    const horizH   = Math.floor(height*0.14);
+    if(isVertBar){
+      ctx.fillStyle=`rgba(${Math.floor((200+glow*55)*bright)},${Math.floor((200+glow*55)*bright)},255,${bright})`;
+      ctx.fillRect(x,crossTop,1,crossH);
+    } else if(u>0.22 && u<0.78){
+      ctx.fillStyle=`rgba(${Math.floor((200+glow*55)*bright)},${Math.floor((200+glow*55)*bright)},255,${bright*0.85})`;
+      ctx.fillRect(x,horizY,1,horizH);
+    }
+    // Свечение
+    if(isVertBar){
+      ctx.fillStyle=`rgba(100,100,255,${bright*glow*0.3})`;
+      ctx.fillRect(x,crossTop,1,crossH);
     }
   } else if(type==='energo'){
     const g=(Math.sin(Date.now()*.005+u*5)+1)*.5;
@@ -582,6 +708,19 @@ function renderMinimap(){
     ctx.fillStyle=item.collected?'#5a4010':'#f0c030';
     const s=item.collected?C*.35:C*.45;
     ctx.fillRect(item.x*C-s/2,item.z*C-s/2,s,s);
+    ctx.globalAlpha=1;
+  });
+
+  // Кресты — синий
+  G.items.forEach(item=>{
+    if(item.type!=='cross'||item.collected) return;
+    const glow=(Math.sin(Date.now()*.005+item.x)+1)*.5;
+    ctx.globalAlpha=0.75+glow*.25;
+    ctx.fillStyle=`rgb(80,${Math.floor(80+glow*60)},255)`;
+    const s=C*.5;
+    // Рисуем крестик
+    ctx.fillRect(item.x*C-s/4,item.z*C-s/2,s/2,s);    // вертикаль
+    ctx.fillRect(item.x*C-s/2,item.z*C-s/4,s,s/2);    // горизонталь
     ctx.globalAlpha=1;
   });
 
