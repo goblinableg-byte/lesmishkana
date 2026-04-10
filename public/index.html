@@ -22,54 +22,57 @@ body{background:#000;overflow:hidden;width:100vw;height:100vh;font-family:'VT323
 input.inp{background:#111;border:2px solid #3a5a3a;color:#c8d8b0;font-family:'VT323',monospace;font-size:1.5rem;padding:.6rem 1rem;margin:.4rem;width:220px;text-align:center;outline:none;letter-spacing:2px;}
 input.inp:focus{border-color:#ff3030;}
 #screen-lobby{background:radial-gradient(ellipse at center,#0d1a0d 0%,#000 80%);}
-#lobby-code{font-family:'Creepster',cursive;font-size:3rem;color:#ff3030;letter-spacing:8px;text-shadow:0 0 15px #ff000066;margin:.5rem 0;}
+#lobby-code{font-family:'Creepster',cursive;font-size:3rem;color:#ff3030;letter-spacing:8px;margin:.5rem 0;}
 #lobby-players{width:90%;max-width:350px;margin:1rem 0;}
 .lobby-player{display:flex;align-items:center;background:#111;border:1px solid #2a3a2a;padding:.5rem 1rem;margin:.3rem 0;border-radius:4px;}
 .player-dot{width:14px;height:14px;border-radius:50%;margin-right:.7rem;flex-shrink:0;}
 #game-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;display:block;touch-action:none;z-index:2;}
 #hud{position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:10;}
-/* TOP RIGHT */
 #top-right{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:5px;align-items:flex-end;}
 #hud-players{display:flex;flex-direction:column;gap:3px;}
-.hud-player{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.78);border:1px solid #2a3a2a;border-radius:14px;padding:3px 7px;}
+.hud-player{display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.78);border:1px solid #2a3a2a;border-radius:14px;padding:3px 8px;}
 .hud-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-family:'Creepster',cursive;color:#000;font-weight:bold;flex-shrink:0;position:relative;}
 .hud-avatar.caught::after{content:'✕';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);border-radius:50%;color:#ff3030;font-size:.95rem;}
 .hud-hp-bar{width:40px;height:5px;background:#333;border-radius:3px;overflow:hidden;}
 .hud-hp-fill{height:100%;background:#4a8a4a;border-radius:3px;}
 .hud-name{font-size:.7rem;color:#999;}
-/* MINIMAP */
-#minimap-wrap{background:rgba(0,0,0,.82);border:2px solid #2a4a2a;border-radius:5px;padding:3px;margin-top:3px;}
+#minimap-wrap{background:rgba(0,0,0,.85);border:2px solid #2a4a2a;border-radius:5px;padding:3px;margin-top:3px;}
 #minimap-canvas{display:block;border-radius:3px;}
 #minimap-label{font-size:.6rem;color:#3a5a3a;text-align:center;letter-spacing:1px;margin-top:1px;}
-/* BOTTOM LEFT */
-#hud-stamina{position:absolute;bottom:155px;left:14px;display:flex;flex-direction:column;gap:3px;}
+#hud-stamina{position:absolute;bottom:160px;left:14px;display:flex;flex-direction:column;gap:3px;}
 .bar-label{font-size:.78rem;color:#777;letter-spacing:1px;}
 .bar-track{width:90px;height:7px;background:#1a1a1a;border-radius:4px;overflow:hidden;border:1px solid #2a2a2a;}
 .bar-fill{height:100%;border-radius:4px;transition:width .1s;}
 #stamina-fill{background:linear-gradient(90deg,#256625,#50ff50);}
 #adrenaline-fill{background:linear-gradient(90deg,#996600,#ffcc00);}
-/* BOTTOM RIGHT — страницы */
-#hud-pages{position:absolute;bottom:155px;right:14px;display:flex;flex-wrap:wrap;gap:2px;max-width:110px;justify-content:flex-end;}
+#hud-pages{position:absolute;bottom:160px;right:14px;display:flex;flex-wrap:wrap;gap:2px;max-width:115px;justify-content:flex-end;}
 .page-icon{width:17px;height:21px;border:2px solid #3a3a3a;border-radius:2px;background:#0a0a0a;display:flex;align-items:center;justify-content:center;font-size:.55rem;color:#3a3a3a;transition:all .3s;}
 .page-icon.collected{border-color:#b89030;background:#1a1200;color:#b89030;}
-/* CENTER */
 #crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:16px;height:16px;}
 #crosshair::before,#crosshair::after{content:'';position:absolute;background:rgba(255,255,255,.5);border-radius:2px;}
 #crosshair::before{width:2px;height:100%;left:50%;transform:translateX(-50%);}
 #crosshair::after{width:100%;height:2px;top:50%;transform:translateY(-50%);}
-#near-item{position:absolute;bottom:205px;left:50%;transform:translateX(-50%);background:rgba(190,155,40,.15);border:1px solid #b89030;border-radius:5px;padding:4px 12px;font-size:.95rem;color:#b89030;display:none;}
+#near-item{position:absolute;bottom:210px;left:50%;transform:translateX(-50%);background:rgba(190,155,40,.15);border:1px solid #b89030;border-radius:5px;padding:4px 12px;font-size:.95rem;color:#b89030;display:none;}
 #exit-indicator{position:absolute;top:35%;left:50%;transform:translateX(-50%);background:rgba(60,180,60,.12);border:1px solid #40b840;border-radius:5px;padding:4px 12px;font-size:.95rem;color:#40b840;display:none;}
 #exit-arrow{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:.95rem;color:#40b840;display:none;background:rgba(0,0,0,.65);padding:2px 10px;border-radius:5px;}
-#bobik-msg{position:absolute;bottom:200px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.9);border:1px solid #2a4a2a;border-radius:7px;padding:6px 13px;max-width:86vw;font-size:.9rem;color:#ffe08a;text-align:center;opacity:0;transition:opacity .5s;white-space:nowrap;}
+#gather-indicator{position:absolute;top:42%;left:50%;transform:translateX(-50%);background:rgba(255,200,0,.15);border:2px solid #ffc800;border-radius:8px;padding:8px 16px;font-size:1.1rem;color:#ffc800;display:none;text-align:center;animation:pulse-yellow 1s ease-in-out infinite;}
+@keyframes pulse-yellow{0%,100%{box-shadow:0 0 10px #ffc80088;}50%{box-shadow:0 0 25px #ffc800cc;}}
+#bobik-msg{position:absolute;bottom:205px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.9);border:1px solid #2a4a2a;border-radius:7px;padding:6px 13px;max-width:86vw;font-size:.9rem;color:#ffe08a;text-align:center;opacity:0;transition:opacity .5s;white-space:nowrap;}
 #bobik-msg.show{opacity:1;}
 #bobik-msg::before{content:'🟡 Бобик: ';}
 #grace-timer{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);font-family:'Creepster',cursive;font-size:2.2rem;color:#ff4040;text-shadow:0 0 18px #ff000077;text-align:center;opacity:0;transition:opacity .4s;pointer-events:none;}
 #grace-timer.show{opacity:1;}
+#escape-timer{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-family:'Creepster',cursive;font-size:1.8rem;color:#ff3030;text-shadow:0 0 15px #ff000088;display:none;}
 #caught-msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(120,0,0,.92);border:2px solid #ff3030;border-radius:8px;padding:13px 20px;font-family:'Creepster',cursive;font-size:1.35rem;color:#fff;text-align:center;display:none;z-index:20;}
 #distance-to-heal{font-size:.9rem;color:#ffaaaa;margin-top:3px;}
+/* HUD крест в руках */
+#cross-hud{position:absolute;bottom:160px;left:50%;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:3px;}
+#cross-hud canvas{display:block;}
+#cross-hud span{font-size:.75rem;color:#8888ff;letter-spacing:1px;}
 /* OVERLAYS */
 #overlay-red{position:fixed;inset:0;background:rgba(139,0,0,0);pointer-events:none;transition:background .3s;z-index:14;}
-#overlay-red.active{background:rgba(139,0,0,.48);}
+#overlay-red.active{background:rgba(139,0,0,.5);}
+#overlay-blue{position:fixed;inset:0;background:rgba(30,30,220,0);pointer-events:none;z-index:14;transition:background .2s;}
 #overlay-pulse{position:fixed;inset:0;pointer-events:none;z-index:14;}
 #overlay-pulse.beating{animation:heartbeat .6s ease-in-out infinite;}
 @keyframes heartbeat{0%,100%{box-shadow:inset 0 0 0 rgba(255,0,0,0);}50%{box-shadow:inset 0 0 55px rgba(255,0,0,.36);}}
@@ -82,14 +85,17 @@ input.inp:focus{border-color:#ff3030;}
 #joystick-zone{width:128px;height:128px;position:relative;flex-shrink:0;touch-action:none;}
 #joystick-base{position:absolute;inset:0;border-radius:50%;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.17);}
 #joystick-knob{position:absolute;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.27);border:2px solid rgba(255,255,255,.42);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
-.action-btns{display:flex;flex-direction:column;gap:10px;align-items:flex-end;}
-.action-btn{background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.22);border-radius:50%;width:62px;height:62px;display:flex;align-items:center;justify-content:center;font-size:1.45rem;cursor:pointer;-webkit-tap-highlight-color:transparent;color:#c8d8b0;font-family:'VT323',monospace;touch-action:none;}
+.action-btns{display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+.action-btn{background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.22);border-radius:50%;width:60px;height:60px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;cursor:pointer;-webkit-tap-highlight-color:transparent;color:#c8d8b0;font-family:'VT323',monospace;touch-action:none;}
 .action-btn:active{background:rgba(255,255,255,.2);}
 #btn-interact{border-color:#b89030;}
 #btn-sprint{border-color:#3a7a3a;}
+#btn-cross{border-color:#6666ff;}
 #screen-end{background:radial-gradient(ellipse at center,#1a0000 0%,#000 70%);z-index:200;}
 #screen-end h1{font-family:'Creepster',cursive;font-size:3rem;color:#ff3030;text-align:center;margin-bottom:1rem;}
 #screen-end p{color:#888;font-size:1.2rem;text-align:center;margin-bottom:1.5rem;}
+/* Геймпад-хинт */
+#gamepad-hint{position:absolute;bottom:155px;left:50%;transform:translateX(-50%);font-size:.7rem;color:#444;display:none;}
 </style>
 </head>
 <body>
@@ -130,7 +136,7 @@ input.inp:focus{border-color:#ff3030;}
     <div id="top-right">
       <div id="hud-players"></div>
       <div id="minimap-wrap">
-        <canvas id="minimap-canvas" width="110" height="110"></canvas>
+        <canvas id="minimap-canvas" width="120" height="120"></canvas>
         <div id="minimap-label">КАРТА ЛЕСА</div>
       </div>
     </div>
@@ -143,15 +149,23 @@ input.inp:focus{border-color:#ff3030;}
       </div>
     </div>
     <div id="hud-pages"></div>
+    <div id="cross-hud">
+      <canvas id="cross-canvas" width="40" height="40"></canvas>
+      <span>G — ИЗГНАТЬ</span>
+    </div>
     <div id="crosshair"></div>
     <div id="near-item">[ E ] Взять</div>
     <div id="exit-indicator">🚪 ВЫХОД — нажми E</div>
     <div id="exit-arrow"></div>
+    <div id="gather-indicator">⚠️ ВСЕ СОБЕРИТЕСЬ ЗДЕСЬ!<br><small>Желтая зона на миникарте</small></div>
+    <div id="escape-timer"></div>
     <div id="bobik-msg"></div>
     <div id="grace-timer"></div>
     <div id="caught-msg">😵 ТЫ ПОЙМАН!<br><div id="distance-to-heal">Жди помощи...</div></div>
+    <div id="gamepad-hint">🎮 ГЕЙМПАД ПОДКЛЮЧЁН</div>
   </div>
   <div id="overlay-red"></div>
+  <div id="overlay-blue"></div>
   <div id="overlay-pulse"></div>
   <div id="overlay-screamer">
     <img src="https://image2url.com/r2/default/files/1775503421307-9e71057d-b620-4800-9c13-8e055aeefc40.jpg" alt="">
@@ -159,6 +173,7 @@ input.inp:focus{border-color:#ff3030;}
   <div id="controls">
     <div id="joystick-zone"><div id="joystick-base"></div><div id="joystick-knob"></div></div>
     <div class="action-btns">
+      <button class="action-btn" id="btn-cross">✝</button>
       <button class="action-btn" id="btn-interact">E</button>
       <button class="action-btn" id="btn-sprint">⚡</button>
     </div>
@@ -174,86 +189,38 @@ input.inp:focus{border-color:#ff3030;}
 <script>
 'use strict';
 
-// ══════════════════════════════════════════
-//  ФИКСИРОВАННАЯ КАРТА 32x32 (стиль Baldi's)
-// ══════════════════════════════════════════
-const MAP = [
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-  [1,0,1,1,1,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,1,0,1],
-  [1,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],
-  [1,0,1,0,1,0,1,1,1,1,1,0,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,0,1,0,1],
-  [1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,0,1],
-  [1,0,1,0,1,1,1,1,0,0,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,0,1,0,0,0,0,1],
-  [1,0,0,0,0,0,0,1,0,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,1,0,1,1,1,1,0,1],
-  [1,1,1,0,1,1,0,1,0,1,0,1,1,0,1,0,1,0,1,1,1,1,1,0,1,0,0,0,0,1,0,1],
-  [1,0,0,0,0,1,0,0,0,1,0,1,0,0,0,0,1,0,1,0,0,0,1,0,0,0,1,1,0,1,0,1],
-  [1,0,1,1,0,1,1,1,1,1,0,1,0,1,1,0,1,0,1,0,1,0,1,1,1,0,0,1,0,1,0,1],
-  [1,0,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,0,1,0,0,0,1,1,0,1,0,0,0,1],
-  [1,1,0,1,0,1,1,1,1,1,0,1,0,1,0,1,1,0,1,0,1,1,0,0,0,1,0,1,1,1,0,1],
-  [1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,1,0,0,0,0,1,0,1,0,1,0,0,0,1,0,1],
-  [1,0,1,1,0,1,0,1,0,1,1,1,0,1,1,0,1,1,1,1,0,1,0,1,0,0,0,1,0,1,0,1],
-  [1,0,0,1,0,0,0,1,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0,1,1,1,0,1,0,0,0,1],
-  [1,1,0,1,1,1,0,1,1,1,0,1,1,0,1,0,1,0,0,1,1,1,0,0,0,1,0,1,1,1,0,1],
-  [1,0,0,0,0,1,0,0,0,1,0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,1,0,0,0,1,0,1],
-  [1,0,1,1,0,1,1,1,0,1,1,0,1,1,1,0,1,0,1,0,0,1,0,1,0,1,1,1,0,1,0,1],
-  [1,0,1,0,0,0,0,1,0,0,1,0,0,0,1,0,0,0,1,0,1,1,0,0,0,0,0,1,0,0,0,1],
-  [1,0,1,0,1,1,0,1,1,0,1,1,1,0,1,1,1,0,1,0,0,1,1,1,1,1,0,1,1,1,0,1],
-  [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1],
-  [1,1,1,0,1,0,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1,1,0,1,1,1,0,1,0,1],
-  [1,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1],
-  [1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,0,1,1,1,0,1],
-  [1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,1],
-  [1,1,1,0,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1],
-  [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1],
-  [1,0,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1,0,1],
-  [1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,1],
-  [1,0,1,0,1,1,1,1,1,1,1,0,1,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1,0,1,0,1],
-  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-];
+// ══ ТЕКСТУРА МИШКАНА (загружаем заранее) ══
+const mishkanImg = new Image();
+mishkanImg.src = 'https://image2url.com/r2/default/files/1775836257784-db975cda-b278-4e12-9602-b14167efe0f7.jpg';
+let mishkanTexReady = false;
+mishkanImg.onload = () => { mishkanTexReady = true; };
 
-// Позиции предметов (фиксированные, совпадают с сервером)
-const PAGE_DEFS = [
-  {id:'page_0',x:2.5,z:1.5},{id:'page_1',x:26.5,z:1.5},
-  {id:'page_2',x:4.5,z:4.5},{id:'page_3',x:7.5,z:8.5},
-  {id:'page_4',x:29.5,z:8.5},{id:'page_5',x:5.5,z:13.5},
-  {id:'page_6',x:1.5,z:18.5},{id:'page_7',x:13.5,z:22.5},
-  {id:'page_8',x:4.5,z:25.5},{id:'page_9',x:30.5,z:29.5},
-];
-const ENERGO_DEFS = [
-  {id:'energo_0',x:21.5,z:1.5},{id:'energo_1',x:3.5,z:5.5},
-  {id:'energo_2',x:27.5,z:9.5},{id:'energo_3',x:2.5,z:23.5},
-  {id:'energo_4',x:20.5,z:26.5},
-];
-const SPAWN_PTS = [{x:15.5,z:15.5},{x:16.5,z:15.5},{x:15.5,z:16.5},{x:16.5,z:16.5}];
-const EXIT_POS  = {x:15.5, z:0.7};
-const MISHKAN_START = {x:29.5, z:21.5};
-
-// ── AUDIO ──
-const AUDIO={};
-let audioCtx=null;
-function initAudio(){
-  AUDIO.bg=new Audio('https://image2url.com/r2/default/files/1775502743982-2a4e8ee7-3dfd-4bed-a35e-2fa1db366b96.m4a');
+// ══ АУДИО ══
+const AUDIO = {};
+let audioCtx = null;
+function initAudio() {
+  AUDIO.bg     = new Audio('https://image2url.com/r2/default/files/1775502743982-2a4e8ee7-3dfd-4bed-a35e-2fa1db366b96.m4a');
   AUDIO.bg.loop=true; AUDIO.bg.volume=0.15;
-  AUDIO.zoom=new Audio('https://image2url.com/r2/default/files/1775503673618-4ef1e1d3-066a-4e58-8442-2f4a80b8fc52.mp3');
-  AUDIO.zoom.volume=0.9;
-  AUDIO.scream=new Audio('https://image2url.com/r2/default/files/1775503545113-70bfeb3a-77a6-48ad-8ebe-e2639c1e2b77.mp3');
-  AUDIO.caught=new Audio('https://image2url.com/r2/default/files/1775503969660-11d003f6-bf69-4148-bb38-965ed4f0808b.mp3');
-  try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}
+  AUDIO.zoom   = new Audio('https://image2url.com/r2/default/files/1775503673618-4ef1e1d3-066a-4e58-8442-2f4a80b8fc52.mp3');
+  AUDIO.scream = new Audio('https://image2url.com/r2/default/files/1775503545113-70bfeb3a-77a6-48ad-8ebe-e2639c1e2b77.mp3');
+  AUDIO.caught = new Audio('https://image2url.com/r2/default/files/1775503969660-11d003f6-bf69-4148-bb38-965ed4f0808b.mp3');
+  AUDIO.banish = new Audio('https://image2url.com/r2/default/files/1775834476207-f1cf1086-1de2-4272-bc82-04a588404a04.mp3');
+  AUDIO.escape = new Audio('https://image2url.com/r2/default/files/1775835239510-86b663b2-fa42-4f2f-b724-66f4bc72cfe7.m4a');
+  try { audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){}
 }
-function playFootstep(){
-  if(!audioCtx)return;
+function playFootstep() {
+  if(!audioCtx) return;
   const buf=audioCtx.createBuffer(1,Math.floor(audioCtx.sampleRate*.05),audioCtx.sampleRate);
   const d=buf.getChannelData(0);
-  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/600)*.3;
-  const src=audioCtx.createBufferSource(),g=audioCtx.createGain();
-  g.gain.value=.25; src.buffer=buf; src.connect(g); g.connect(audioCtx.destination); src.start();
+  for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/600)*.28;
+  const src=audioCtx.createBufferSource(), g=audioCtx.createGain();
+  g.gain.value=.22; src.buffer=buf; src.connect(g); g.connect(audioCtx.destination); src.start();
 }
 function playAudio(k){if(!AUDIO[k])return;AUDIO[k].currentTime=0;AUDIO[k].play().catch(()=>{});}
 function setBgVol(v){if(AUDIO.bg)AUDIO.bg.volume=Math.max(0,Math.min(1,v));}
 
-// ── WS ──
-let ws=null,myId=null,isHost=false;
+// ══ WS ══
+let ws=null, myId=null, isHost=false;
 const WS_URL=`${location.protocol==='https:'?'wss':'ws'}://${location.host}`;
 function connectWS(){
   return new Promise((res,rej)=>{
@@ -264,7 +231,7 @@ function connectWS(){
 }
 function send(o){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(o));}
 
-// ── SCREENS ──
+// ══ SCREENS ══
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 function showCreate(){showScreen('screen-create');}
 function showJoin(){showScreen('screen-join');}
@@ -281,387 +248,352 @@ async function joinLobby(){
 function startGame(){send({type:'start_game'});}
 function updateLobbyUI(players){
   const el=document.getElementById('lobby-players');el.innerHTML='';
-  players.forEach(p=>{const d=document.createElement('div');d.className='lobby-player';d.innerHTML=`<div class="player-dot" style="background:${p.color}"></div><span style="font-size:1.05rem">${p.name}</span>`;el.appendChild(d);});
+  players.forEach(p=>{
+    const d=document.createElement('div');d.className='lobby-player';
+    d.innerHTML=`<div class="player-dot" style="background:${p.color}"></div><span>${p.name}</span>`;
+    el.appendChild(d);
+  });
 }
 
-// ── GAME STATE ──
+// ══ GAME STATE ══
 const G={
-  items:[],players:{},
-  mishkan:{x:MISHKAN_START.x,z:MISHKAN_START.z,angle:0},
-  myPlayer:null,caught:false,
-  stamina:100,sprinting:false,
-  adrenaline:false,adrenalineTimer:0,
-  keys:{up:false,down:false,left:false,right:false},
-  joyX:0,joyZ:0,
-  interact:false,pages:0,allPagesCollected:false,
+  map:null, items:[], players:{},
+  mishkan:{x:30.5,z:30.5,angle:0,banished:false},
+  myPlayer:null, caught:false,
+  stamina:100, sprinting:false,
+  adrenaline:false, adrenalineTimer:0,
+  keys:{up:false,down:false,left:false,right:false,interact:false,sprint:false,cross:false},
+  joyX:0, joyZ:0,
+  interact:false, pages:0, allPagesCollected:false,
   camYaw:Math.PI, camPitch:0,
-  bobbingT:0,bobbingAmt:0,footstepTimer:0,
+  bobbingT:0, bobbingAmt:0, footstepTimer:0,
+  screenShakeX:0, screenShakeY:0,
+  inputDisabled:false,
+  escapeActive:false,
+  fallingObjects:[],
+  escapeAudioStarted:false,
+  stuned:false, stunTimer:0,
+  hasCross:false,
+  crossUsing:false, crossAnim:0,
+  mishkanBanished:false, mishkanBanishTimer:0,
+  gatherZoneActive:false,
 };
+const MAP_SIZE=36;
+const EXIT_POS={x:17.5,z:0.7};
+const GATHER_POS={x:17.5,z:30};
+const MISHKAN_START={x:30.5,z:30.5};
 
 // ══════════════════════════════════════════
-//  RAYCASTER ENGINE (DDA + Z-buffer)
+//  RAYCASTER ENGINE
 // ══════════════════════════════════════════
-let rcCanvas=null,rcCtx=null,rcW=0,rcH=0;
-let FOV=Math.PI/2.5; // ~72° как в Baldi's
+let rcCanvas=null, rcCtx=null, rcW=0, rcH=0;
+let FOV=Math.PI/2.5;
 
 function initRC(){
   rcCanvas=document.getElementById('game-canvas');
   rcCtx=rcCanvas.getContext('2d');
-  onResize();
-  window.addEventListener('resize',onResize);
+  onResize(); window.addEventListener('resize',onResize);
 }
 function onResize(){
   rcW=window.innerWidth; rcH=window.innerHeight;
   rcCanvas.width=rcW; rcCanvas.height=rcH;
 }
 
-// Цвет стены с затемнением по расстоянию
-function getWallColor(side,dist){
-  const f=Math.max(0,1-dist/18);
-  if(side===1) return `rgb(${Math.floor(12*f)},${Math.floor(38*f)},${Math.floor(12*f)})`;
-  return `rgb(${Math.floor(18*f)},${Math.floor(55*f)},${Math.floor(18*f)})`;
+// ── Правильная неподвижная текстура стены ──
+// Использует МИРОВЫЕ координаты (mapX/mapZ + wallHit), НЕ экранные
+function getWallStrip(side, dist, mapX, mapZ, px, pz, rayAngle, bright) {
+  // bright = 0..1
+  // Базовый цвет дерева/мха
+  const f = bright;
+  // Определяем точку попадания луча в стену (texture coordinate)
+  let wallHitU;
+  if (side === 0) {
+    // Луч попал в вертикальную грань (X)
+    wallHitU = pz + dist * Math.cos(rayAngle);
+    wallHitU -= Math.floor(wallHitU);
+  } else {
+    // Луч попал в горизонтальную грань (Z)
+    wallHitU = px + dist * Math.sin(rayAngle);
+    wallHitU -= Math.floor(wallHitU);
+  }
+  // wallHitU: 0..1 — горизонтальная позиция на стене
+
+  // Текстура: чередование коры и мха
+  const tx = Math.floor(wallHitU * 16); // 16 "столбцов" текстуры
+  const isKnot = (tx === 3 || tx === 11); // сучки
+  const isMoss  = (tx >= 6 && tx <= 9);   // мох
+  const isDark  = (tx === 0 || tx === 15);// тень по краям
+
+  let r, g, b;
+  if (side === 1) {
+    // Затенённая грань — темнее
+    if (isKnot)       { r=Math.floor(40*f); g=Math.floor(25*f); b=Math.floor(5*f); }
+    else if (isMoss)  { r=Math.floor(8*f);  g=Math.floor(42*f); b=Math.floor(8*f); }
+    else if (isDark)  { r=Math.floor(18*f); g=Math.floor(14*f); b=Math.floor(4*f); }
+    else              { r=Math.floor(30*f); g=Math.floor(22*f); b=Math.floor(6*f); }
+  } else {
+    if (isKnot)       { r=Math.floor(55*f); g=Math.floor(35*f); b=Math.floor(8*f); }
+    else if (isMoss)  { r=Math.floor(12*f); g=Math.floor(60*f); b=Math.floor(12*f); }
+    else if (isDark)  { r=Math.floor(25*f); g=Math.floor(20*f); b=Math.floor(5*f); }
+    else              { r=Math.floor(45*f); g=Math.floor(32*f); b=Math.floor(9*f); }
+  }
+  return `rgb(${r},${g},${b})`;
 }
 
 function renderScene(){
-  if(!G.myPlayer) return;
+  if(!G.myPlayer||!G.map) return;
   const ctx=rcCtx, W=rcW, H=rcH;
   const px=G.myPlayer.x, pz=G.myPlayer.z;
-  const yaw=G.camYaw, pitch=G.camPitch;
-  const horizon=Math.floor(H/2+pitch*H*0.45);
+  const yaw=G.camYaw;
+  // Pitch: вверх = отрицательный pitch сдвигает горизонт вниз
+  // camPitch диапазон -0.5..0.5
+  const horizon=Math.floor(H/2 - G.camPitch*H*0.5);
+
+  // Тряска экрана
+  const shakeX=G.screenShakeX, shakeY=G.screenShakeY;
+  ctx.save();
+  if(shakeX||shakeY) ctx.translate(shakeX,shakeY);
 
   // Небо
-  ctx.fillStyle='#030903';
+  const skyGrad=ctx.createLinearGradient(0,0,0,Math.max(1,horizon));
+  skyGrad.addColorStop(0,'#010501');
+  skyGrad.addColorStop(1,'#0a180a');
+  ctx.fillStyle=skyGrad;
   ctx.fillRect(0,0,W,Math.max(0,horizon));
-  // Пол
-  ctx.fillStyle='#070d07';
-  ctx.fillRect(0,horizon,W,H-horizon);
 
-  // Лёгкий градиент пола
-  const floorGrad=ctx.createLinearGradient(0,horizon,0,H);
-  floorGrad.addColorStop(0,'rgba(15,30,10,0.5)');
-  floorGrad.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=floorGrad;
-  ctx.fillRect(0,horizon,W,H-horizon);
+  // Пол
+  const flrGrad=ctx.createLinearGradient(0,horizon,0,H);
+  flrGrad.addColorStop(0,'#0c180a');
+  flrGrad.addColorStop(1,'#030603');
+  ctx.fillStyle=flrGrad;
+  ctx.fillRect(0,Math.max(0,horizon),W,H);
 
   const halfFOV=FOV/2;
   const zBuf=new Float32Array(W);
 
-  // ── СТЕНЫ (DDA) ──
+  // ── СТЕНЫ (DDA) — текстура неподвижная ──
   for(let col=0;col<W;col++){
     const rayAngle=yaw-halfFOV+(col/W)*FOV;
     const rdx=Math.sin(rayAngle), rdz=Math.cos(rayAngle);
-
     let mx=Math.floor(px), mz=Math.floor(pz);
     const sx=rdx>0?1:-1, sz=rdz>0?1:-1;
     const ddx=Math.abs(1/rdx), ddz=Math.abs(1/rdz);
     let sdx=(rdx>0?(mx+1-px):(px-mx))*ddx;
     let sdz=(rdz>0?(mz+1-pz):(pz-mz))*ddz;
-    let side=0, hit=false;
+    let side=0, hit=false, hitX=0, hitZ=0;
 
-    for(let step=0;step<64;step++){
+    for(let step=0;step<72;step++){
       if(sdx<sdz){sdx+=ddx;mx+=sx;side=0;}
       else{sdz+=ddz;mz+=sz;side=1;}
-      if(mz<0||mz>=32||mx<0||mx>=32){break;}
-      if(MAP[mz][mx]===1){hit=true;break;}
+      if(mz<0||mz>=MAP_SIZE||mx<0||mx>=MAP_SIZE) break;
+      if(G.map[mz][mx]===1){hit=true;hitX=mx;hitZ=mz;break;}
     }
 
     let dist=0;
     if(hit){
       dist=side===0?(sdx-ddx):(sdz-ddz);
-      dist=Math.max(0.001,dist*Math.cos(rayAngle-yaw)); // fisheye fix
-    } else dist=18;
+      dist=Math.max(0.001,dist*Math.cos(rayAngle-yaw));
+    } else dist=20;
     zBuf[col]=dist;
 
-    const wallH=Math.min(H*3,Math.floor(H/dist));
+    const wallH=Math.min(H*4,Math.floor(H/dist));
     const wTop=Math.floor(horizon-wallH/2);
     const wBot=wTop+wallH;
-    ctx.fillStyle=getWallColor(side,dist);
-    ctx.fillRect(col,wTop,1,wBot-wTop);
-
-    // Полоска текстуры (мох/кора)
-    if(dist<10&&wallH>4){
-      const tx=Math.floor(Date.now()/5000+col*0.03+mz*1.7+mx*2.3)%3;
-      if(tx===0){
-        ctx.fillStyle=`rgba(0,${Math.floor(20*(1-dist/10))},0,0.25)`;
-        ctx.fillRect(col,wTop+Math.floor(wallH*.15),1,Math.floor(wallH*.7));
-      }
-    }
+    const bright=Math.max(0,1-dist/20);
+    ctx.fillStyle=getWallStrip(side,dist,hitX,hitZ,px,pz,rayAngle,bright);
+    ctx.fillRect(col,wTop,1,Math.max(1,wBot-wTop));
   }
 
   // ── СПРАЙТЫ ──
   const sprites=[];
-  G.items.forEach(item=>{
-    if(!item.collected) sprites.push({x:item.x,z:item.z,type:item.type,data:item});
-  });
-  Object.values(G.players).forEach(p=>{
-    if(p.id!==myId) sprites.push({x:p.x,z:p.z,type:'player',data:p});
-  });
-  sprites.push({x:G.mishkan.x,z:G.mishkan.z,type:'mishkan',data:G.mishkan});
+  G.items.forEach(item=>{if(!item.collected) sprites.push({x:item.x,z:item.z,type:item.type,data:item});});
+  Object.values(G.players).forEach(p=>{if(p.id!==myId) sprites.push({x:p.x,z:p.z,type:'player',data:p});});
+  if(!G.mishkan.banished) sprites.push({x:G.mishkan.x,z:G.mishkan.z,type:'mishkan',data:G.mishkan});
 
-  // Сортировка дальние→ближние
-  sprites.forEach(s=>{
-    const dx=s.x-px,dz=s.z-pz;
-    s._dist2=dx*dx+dz*dz;
-  });
-  sprites.sort((a,b)=>b._dist2-a._dist2);
+  // Падающие объекты (финал)
+  G.fallingObjects.forEach(obj=>{sprites.push({x:obj.x,z:obj.z,type:'falling',data:obj});});
+
+  sprites.forEach(s=>{ const dx=s.x-px,dz=s.z-pz; s._d2=dx*dx+dz*dz; });
+  sprites.sort((a,b)=>b._d2-a._d2);
 
   sprites.forEach(sp=>{
     const dx=sp.x-px, dz=sp.z-pz;
-    const dist=Math.sqrt(sp._dist2);
-    if(dist<0.25||dist>16) return;
+    const dist=Math.sqrt(sp._d2);
+    if(dist<0.25||dist>18) return;
+    let rel=Math.atan2(dx,dz)-yaw;
+    while(rel>Math.PI)rel-=Math.PI*2; while(rel<-Math.PI)rel+=Math.PI*2;
+    if(Math.abs(rel)>halfFOV*1.15) return;
 
-    let relAngle=Math.atan2(dx,dz)-yaw;
-    while(relAngle>Math.PI)relAngle-=Math.PI*2;
-    while(relAngle<-Math.PI)relAngle+=Math.PI*2;
-    if(Math.abs(relAngle)>halfFOV*1.1) return;
-
-    const scrX=Math.floor(W/2+(relAngle/halfFOV)*(W/2));
-    const scale=sp.type==='mishkan'?1.15:(sp.type==='player'?0.85:0.65);
-    const sh=Math.min(H*2.2,Math.floor((H/dist)*scale));
-    const sw=Math.floor(sh*(sp.type==='mishkan'?0.85:sp.type==='player'?0.6:0.55));
+    const scrX=Math.floor(W/2+(rel/halfFOV)*(W/2));
+    const scale=sp.type==='mishkan'?1.3:(sp.type==='player'?0.9:(sp.type==='falling'?0.7:0.65));
+    const sh=Math.min(H*2.5,Math.floor((H/dist)*scale));
+    const sw=Math.floor(sh*(sp.type==='mishkan'?0.85:sp.type==='player'?0.6:0.5));
     const sLeft=scrX-Math.floor(sw/2);
-    const sTop=Math.floor(horizon-sh*(sp.type==='mishkan'?0.88:0.82));
+    // Вертикальный сдвиг для pitch
+    const pitchOffset=Math.floor(G.camPitch*H*0.5);
+    // Падающий объект имеет дополнительный Y-offset
+    const fallY=sp.type==='falling'?(sp.data.y||0):0;
+    const sTop=Math.floor(horizon-sh*(sp.type==='mishkan'?0.92:0.85)) + (fallY>0?-Math.floor(fallY*sh*0.4):0);
     const bright=Math.max(0.07,1-dist/16);
 
-    // Рисуем по колонкам через Z-буфер
     for(let sx2=0;sx2<sw;sx2++){
-      const cx=sLeft+sx2;
-      if(cx<0||cx>=W) continue;
-      if(zBuf[cx]<=dist) continue; // стена ближе — пропускаем ✅
-      const u=sx2/sw; // 0..1 горизонтальная позиция
-      drawSpriteStrip(ctx,sp.type,sp.data,cx,sTop,sh,u,bright);
+      const cx=sLeft+sx2; if(cx<0||cx>=W) continue;
+      if(zBuf[cx]<=dist) continue;
+      const u=sx2/sw;
+      drawSpriteStrip(ctx,sp.type,sp.data,cx,sTop,sh,u,bright,dist);
     }
   });
 
-  // ── ВОРОТА ВЫХОДА ──
-  {
-    const dx=EXIT_POS.x-px, dz=EXIT_POS.z-pz;
-    const dist=Math.sqrt(dx*dx+dz*dz);
-    if(dist>0.3&&dist<16){
-      let rel=Math.atan2(dx,dz)-yaw;
-      while(rel>Math.PI)rel-=Math.PI*2; while(rel<-Math.PI)rel+=Math.PI*2;
-      if(Math.abs(rel)<halfFOV*1.05){
-        const scx=Math.floor(W/2+(rel/halfFOV)*(W/2));
-        const sh=Math.min(H*2,Math.floor(H/dist*1.4));
-        const sw=Math.floor(sh*0.55);
-        const bright=Math.max(0,1-dist/16);
-        const alpha=G.allPagesCollected?bright*0.95:bright*0.4;
-        ctx.save();
-        ctx.globalAlpha=alpha;
-        const gc=G.allPagesCollected?`rgb(0,${Math.floor(220*bright)},0)`:`rgb(0,${Math.floor(100*bright)},0)`;
-        ctx.fillStyle=gc;
-        // Столбы
-        ctx.fillRect(scx-Math.floor(sw/2),Math.floor(horizon-sh*.88),3,sh);
-        ctx.fillRect(scx+Math.floor(sw/2)-3,Math.floor(horizon-sh*.88),3,sh);
-        ctx.fillRect(scx-Math.floor(sw/2),Math.floor(horizon-sh*.88),sw,3);
-        if(G.allPagesCollected){
-          ctx.fillStyle=`rgba(0,255,50,${alpha*0.12})`;
-          ctx.fillRect(scx-Math.floor(sw/2)+3,Math.floor(horizon-sh*.88)+3,sw-6,sh-3);
-        }
-        ctx.restore();
-      }
-    }
-  }
+  // ── ВОРОТА ──
+  drawExit(ctx, px, pz, yaw, horizon, halfFOV, W, H);
 
   // Виньетка
-  const vig=rcCtx.createRadialGradient(W/2,H/2,H*.25,W/2,H/2,H*.72);
+  const vig=ctx.createRadialGradient(W/2+shakeX,H/2+shakeY,H*.22,W/2+shakeX,H/2+shakeY,H*.75);
   vig.addColorStop(0,'rgba(0,0,0,0)');
-  vig.addColorStop(1,'rgba(0,0,0,.65)');
+  vig.addColorStop(1,'rgba(0,0,0,.68)');
   ctx.fillStyle=vig;
   ctx.fillRect(0,0,W,H);
+
+  ctx.restore(); // конец тряски
+
+  // ── КРЕСТ В РУКАХ (анимация) ──
+  if(G.hasCross) drawCrossHands(ctx, W, H);
 }
 
-// Рисует 1px вертикальную полосу спрайта
-function drawSpriteStrip(ctx,type,data,x,top,height,u,bright){
-  if(type==='mishkan'){
-    // Мишкан: детальная 2.5D текстура спанч боба-монстра
-    const t = Date.now();
-    const pulse = (Math.sin(t*0.003)+1)*0.5;
-    // Зоны по u (горизонталь):
-    // 0.00-0.08 левая рука    0.08-0.92 тело    0.92-1.0 правая рука
-    // Зоны по height (вертикаль):
-    // 0-15% голова-нос  15-30% глаза  30-45% нос/рот  45-90% тело  90-100% ноги
-    const isLeftArm  = u < 0.10;
-    const isRightArm = u > 0.90;
-    const isBody     = !isLeftArm && !isRightArm;
-    const relY = (y) => (y - top) / Math.max(1, height);
+function drawExit(ctx,px,pz,yaw,horizon,halfFOV,W,H){
+  const dx=EXIT_POS.x-px, dz=EXIT_POS.z-pz;
+  const dist=Math.sqrt(dx*dx+dz*dz);
+  if(dist<0.3||dist>20) return;
+  let rel=Math.atan2(dx,dz)-yaw;
+  while(rel>Math.PI)rel-=Math.PI*2; while(rel<-Math.PI)rel+=Math.PI*2;
+  if(Math.abs(rel)>halfFOV*1.05) return;
+  const scx=Math.floor(W/2+(rel/halfFOV)*(W/2));
+  const sh=Math.min(H*2.5,Math.floor(H/dist*1.5));
+  const sw=Math.floor(sh*0.55);
+  const bright=Math.max(0,1-dist/18);
+  const alpha=G.allPagesCollected?bright*0.95:bright*0.35;
+  ctx.save(); ctx.globalAlpha=alpha;
+  const col=G.allPagesCollected?`rgb(0,${Math.floor(220*bright)},0)`:`rgb(0,${Math.floor(90*bright)},0)`;
+  ctx.fillStyle=col;
+  ctx.fillRect(scx-Math.floor(sw/2),Math.floor(horizon-sh*.88),3,sh);
+  ctx.fillRect(scx+Math.floor(sw/2)-3,Math.floor(horizon-sh*.88),3,sh);
+  ctx.fillRect(scx-Math.floor(sw/2),Math.floor(horizon-sh*.88),sw,3);
+  if(G.allPagesCollected){
+    ctx.fillStyle=`rgba(0,255,50,${alpha*0.1})`;
+    ctx.fillRect(scx-Math.floor(sw/2)+3,Math.floor(horizon-sh*.88)+3,sw-6,sh-3);
+  }
+  ctx.restore();
+}
 
-    if(isLeftArm || isRightArm){
-      // Руки — тёмно-жёлтые, длинные
-      const armTop  = Math.floor(top + height*0.38);
-      const armH    = Math.floor(height*0.42);
-      ctx.fillStyle = `rgba(${Math.floor(60*bright)},${Math.floor(45*bright)},0,${bright*0.9})`;
-      ctx.fillRect(x, armTop, 1, armH);
-      // Кисть
-      ctx.fillStyle = `rgba(${Math.floor(50*bright)},${Math.floor(38*bright)},0,${bright})`;
-      ctx.fillRect(x, armTop+armH, 1, Math.floor(height*0.08));
+function drawCrossHands(ctx, W, H) {
+  if(!G.hasCross) return;
+  const anim=G.crossAnim; // 0=висит внизу, 1=поднят в центр
+  const cx=W/2, cy=H/2+(1-anim)*H*0.3+H*0.08;
+  const size=Math.floor(H*0.12*(1+anim*0.5));
+  ctx.save();
+  ctx.globalAlpha=0.85+anim*0.15;
+  // Голубое свечение при использовании
+  if(anim>0.1){
+    ctx.shadowColor=`rgba(100,100,255,${anim})`;
+    ctx.shadowBlur=20+anim*30;
+  }
+  ctx.strokeStyle=`rgb(${Math.floor(180+anim*75)},${Math.floor(180+anim*75)},255)`;
+  ctx.lineWidth=size*0.18;
+  ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(cx,cy-size/2); ctx.lineTo(cx,cy+size/2); // вертикаль
+  ctx.moveTo(cx-size*0.35,cy-size*0.1); ctx.lineTo(cx+size*0.35,cy-size*0.1); // горизонталь
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Рисует 1px полосу спрайта
+function drawSpriteStrip(ctx,type,data,x,top,height,u,bright,dist){
+  if(type==='mishkan'){
+    // Используем текстуру если загружена
+    if(mishkanTexReady){
+      // Рисуем 1px колонку из текстуры
+      const imgW=mishkanImg.width||1, imgH=mishkanImg.height||1;
+      const srcX=Math.floor(u*imgW);
+      const sh=Math.floor(height*0.92);
+      // Ширина исходного пикселя
+      try {
+        ctx.drawImage(mishkanImg, srcX,0,1,imgH, x,top, 1,sh);
+        // Затемнение по расстоянию
+        if(bright<0.95){
+          ctx.fillStyle=`rgba(0,0,0,${1-bright*1.05})`;
+          ctx.fillRect(x,top,1,sh);
+        }
+      } catch(e) { drawMishkanFallback(ctx,x,top,height,u,bright); }
       return;
     }
+    drawMishkanFallback(ctx,x,top,height,u,bright);
+    return;
+  }
 
-    // === ТЕЛО (isBody) ===
-    // Высота всего спрайта делится на зоны
-    const hh = height; // полная высота
-    const bodyTop  = top;
-    const eyeZone  = Math.floor(top + hh*0.18);
-    const mouthZ   = Math.floor(top + hh*0.36);
-    const beltZ    = Math.floor(top + hh*0.50);
-    const shoeZ    = Math.floor(top + hh*0.82);
-    const botZ     = Math.floor(top + hh*0.92);
-
-    // -- Голова (жёлтая рваная губка) --
-    const spongeNoise = ((Math.floor(u*18+2))%5===0) ? 0.75 : 1.0;
-    const headR = Math.floor(180*bright*spongeNoise);
-    const headG = Math.floor(155*bright*spongeNoise);
-    ctx.fillStyle = `rgba(${headR},${headG},0,${bright})`;
-    ctx.fillRect(x, bodyTop, 1, eyeZone - bodyTop);
-
-    // -- Дырки-поры на голове --
-    const poreRow = Math.floor(u*12);
-    const isPore = (poreRow%4===1) && ((Math.floor(u*20+1))%5===0);
-    if(isPore && eyeZone - bodyTop > 4){
-      ctx.fillStyle = `rgba(${Math.floor(90*bright)},${Math.floor(70*bright)},0,${bright})`;
-      const poreY = Math.floor(bodyTop + (eyeZone-bodyTop)*0.5);
-      ctx.fillRect(x, poreY, 1, Math.max(1, Math.floor((eyeZone-bodyTop)*0.3)));
-    }
-
-    // -- Глаза (большие красные с зрачком) --
-    const isLeftEye  = (u>0.22 && u<0.42);
-    const isRightEye = (u>0.58 && u<0.78);
-    const eyeH = Math.floor(hh*0.17);
-    if(isLeftEye || isRightEye){
-      // Белок
-      ctx.fillStyle = `rgba(${Math.floor(220*bright)},${Math.floor(180*bright)},${Math.floor(180*bright)},${bright})`;
-      ctx.fillRect(x, eyeZone, 1, eyeH);
-      // Красный зрачок посередине глаза
-      const isCenter = (isLeftEye && u>0.28 && u<0.36)||(isRightEye && u>0.64 && u<0.72);
-      if(isCenter){
-        const pupilY = Math.floor(eyeZone + eyeH*0.25);
-        const pupilH = Math.floor(eyeH*0.5);
-        ctx.fillStyle = `rgba(255,${Math.floor(20*bright)},0,${Math.min(1,bright+pulse*0.4)})`;
-        ctx.fillRect(x, pupilY, 1, pupilH);
-        // Блик
-        ctx.fillStyle = `rgba(255,255,255,${bright*0.6})`;
-        ctx.fillRect(x, pupilY, 1, Math.max(1,Math.floor(pupilH*0.25)));
-      }
-      // Тело губки под глазом (до рта)
-      ctx.fillStyle = `rgba(${Math.floor(170*bright)},${Math.floor(145*bright)},0,${bright})`;
-      ctx.fillRect(x, eyeZone+eyeH, 1, mouthZ-(eyeZone+eyeH));
-    } else {
-      // Нос между глазами
-      ctx.fillStyle = `rgba(${Math.floor(160*bright)},${Math.floor(135*bright)},0,${bright})`;
-      ctx.fillRect(x, eyeZone, 1, mouthZ-eyeZone);
-      // Нос — маленький выступ
-      if(Math.abs(u-0.50)<0.05){
-        ctx.fillStyle = `rgba(${Math.floor(140*bright)},${Math.floor(110*bright)},0,${bright})`;
-        ctx.fillRect(x, eyeZone+Math.floor(eyeH*0.3), 1, Math.floor(eyeH*0.5));
-      }
-    }
-
-    // -- Рот (зубы + темнота) --
-    const mouthH = Math.floor(hh*0.08);
-    const isToothZone = u>0.25 && u<0.75;
-    if(isToothZone){
-      const toothIdx = Math.floor((u-0.25)/0.1);
-      const isTooth  = (toothIdx%2===0);
-      ctx.fillStyle = isTooth
-        ? `rgba(${Math.floor(220*bright)},${Math.floor(210*bright)},${Math.floor(180*bright)},${bright})`
-        : `rgba(${Math.floor(20*bright)},${Math.floor(8*bright)},0,${bright})`;
-      ctx.fillRect(x, mouthZ, 1, mouthH);
-    } else {
-      ctx.fillStyle = `rgba(${Math.floor(25*bright)},${Math.floor(10*bright)},0,${bright})`;
-      ctx.fillRect(x, mouthZ, 1, mouthH);
-    }
-
-    // -- Тело (квадратная губка, жёлтая) --
-    const bodyH = shoeZ - (mouthZ+mouthH);
-    const bodyR = Math.floor(175*bright*(((Math.floor(u*14))%3===0)?0.82:1.0));
-    const bodyG = Math.floor(148*bright*(((Math.floor(u*14))%3===0)?0.82:1.0));
-    ctx.fillStyle = `rgba(${bodyR},${bodyG},0,${bright})`;
-    ctx.fillRect(x, mouthZ+mouthH, 1, bodyH);
-    // Поры на теле
-    const bPore = ((Math.floor(u*16))%4===1);
-    if(bPore && bodyH>4){
-      ctx.fillStyle = `rgba(${Math.floor(80*bright)},${Math.floor(65*bright)},0,${bright})`;
-      const py = mouthZ+mouthH+Math.floor(bodyH*0.4);
-      ctx.fillRect(x, py, 1, Math.max(1,Math.floor(bodyH*0.2)));
-    }
-    // Пояс (полоска)
-    if(Math.abs(u-0.5)<0.4){
-      ctx.fillStyle = `rgba(${Math.floor(100*bright)},${Math.floor(60*bright)},${Math.floor(10*bright)},${bright*0.8})`;
-      ctx.fillRect(x, beltZ, 1, Math.max(2,Math.floor(hh*0.04)));
-    }
-
-    // -- Ноги (коричневые штаны) --
-    const legH = botZ - shoeZ;
-    // Две ноги с зазором
-    const isLeftLeg  = u>0.22 && u<0.44;
-    const isRightLeg = u>0.56 && u<0.78;
-    if(isLeftLeg || isRightLeg){
-      ctx.fillStyle = `rgba(${Math.floor(100*bright)},${Math.floor(60*bright)},${Math.floor(10*bright)},${bright})`;
-      ctx.fillRect(x, shoeZ, 1, legH);
-      // Ботинки
-      ctx.fillStyle = `rgba(${Math.floor(30*bright)},${Math.floor(20*bright)},${Math.floor(50*bright)},${bright})`;
-      ctx.fillRect(x, botZ, 1, Math.floor(hh*0.08));
-    }
-  } else if(type==='player'){
+  if(type==='player'){
     const c=hexRgb(data.color||'#ff6b6b');
-    const headH=Math.floor(height*.22);
-    const bodyH=Math.floor(height*.33);
-    const legH=Math.floor(height*.28);
-    const r=data.caught?200:Math.floor(c[0]*bright);
-    const g2=data.caught?0:Math.floor(c[1]*bright);
-    const b2=data.caught?0:Math.floor(c[2]*bright);
-    ctx.fillStyle=`rgba(${r},${g2},${b2},${bright})`;
-    ctx.fillRect(x,top,1,headH);
-    ctx.fillStyle=`rgba(${Math.floor(r*.7)},${Math.floor(g2*.7)},${Math.floor(b2*.7)},${bright})`;
-    ctx.fillRect(x,top+headH,1,bodyH);
-    ctx.fillStyle=`rgba(${Math.floor(25*bright)},${Math.floor(25*bright)},${Math.floor(55*bright)},${bright})`;
-    ctx.fillRect(x,top+headH+bodyH,1,legH);
-  } else if(type==='page'){
+    const headH=Math.floor(height*.22), bodyH=Math.floor(height*.33), legH=Math.floor(height*.28);
+    const r=data.caught?200:Math.floor(c[0]*bright), g2=data.caught?0:Math.floor(c[1]*bright), b2=data.caught?0:Math.floor(c[2]*bright);
+    ctx.fillStyle=`rgba(${r},${g2},${b2},${bright})`; ctx.fillRect(x,top,1,headH);
+    ctx.fillStyle=`rgba(${Math.floor(r*.7)},${Math.floor(g2*.7)},${Math.floor(b2*.7)},${bright})`; ctx.fillRect(x,top+headH,1,bodyH);
+    ctx.fillStyle=`rgba(${Math.floor(25*bright)},${Math.floor(25*bright)},${Math.floor(55*bright)},${bright})`; ctx.fillRect(x,top+headH+bodyH,1,legH);
+    return;
+  }
+
+  if(type==='page'){
     const g=(Math.sin(Date.now()*.003+u*6)+1)*.5;
     ctx.fillStyle=`rgba(${Math.floor((160+g*60)*bright)},${Math.floor((120+g*35)*bright)},${Math.floor(30*bright)},${bright})`;
     ctx.fillRect(x,top,1,Math.floor(height*.72));
-    // Полоски текста на странице
-    if(u>.15&&u<.85){
-      const lineY=Math.floor(height*.72/5);
-      for(let li=1;li<5;li++){
-        ctx.fillStyle=`rgba(${Math.floor(80*bright)},${Math.floor(60*bright)},${Math.floor(10*bright)},${bright*.7})`;
-        ctx.fillRect(x,top+li*lineY,1,1);
-      }
-    }
-  } else if(type==='cross'){
-    // Крест — белое свечение
-    const glow=(Math.sin(Date.now()*.004+u*4)+1)*.5;
-    const isVertBar = (u>0.42 && u<0.58);
-    const isHorizBar = true; // горизонтальная перекладина посередине
-    const crossTop = Math.floor(top+height*0.08);
-    const crossH   = Math.floor(height*0.75);
-    const horizY   = Math.floor(top+height*0.28);
-    const horizH   = Math.floor(height*0.14);
-    if(isVertBar){
-      ctx.fillStyle=`rgba(${Math.floor((200+glow*55)*bright)},${Math.floor((200+glow*55)*bright)},255,${bright})`;
+    return;
+  }
+
+  if(type==='energo'){
+    const g=(Math.sin(Date.now()*.005+u*5)+1)*.5;
+    const isLabel=u>.25&&u<.75&&Math.abs(u-.5)<.2;
+    ctx.fillStyle=isLabel?`rgba(0,${Math.floor((200+g*55)*bright)},${Math.floor(160*bright)},${bright})`:`rgba(0,${Math.floor(70*bright)},${Math.floor(50*bright)},${bright})`;
+    ctx.fillRect(x,top,1,Math.floor(height*.68));
+    return;
+  }
+
+  if(type==='cross'){
+    const g=(Math.sin(Date.now()*.004+u*4)+1)*.5;
+    const isV=u>.42&&u<.58, isH=u>.22&&u<.78;
+    const crossTop=Math.floor(top+height*.08), crossH=Math.floor(height*.75);
+    const horizY=Math.floor(top+height*.28), horizH=Math.floor(height*.14);
+    if(isV){
+      ctx.fillStyle=`rgba(${Math.floor((200+g*55)*bright)},${Math.floor((200+g*55)*bright)},255,${bright})`;
       ctx.fillRect(x,crossTop,1,crossH);
-    } else if(u>0.22 && u<0.78){
-      ctx.fillStyle=`rgba(${Math.floor((200+glow*55)*bright)},${Math.floor((200+glow*55)*bright)},255,${bright*0.85})`;
+    } else if(isH){
+      ctx.fillStyle=`rgba(${Math.floor((180+g*50)*bright)},${Math.floor((180+g*50)*bright)},230,${bright*.85})`;
       ctx.fillRect(x,horizY,1,horizH);
     }
-    // Свечение
-    if(isVertBar){
-      ctx.fillStyle=`rgba(100,100,255,${bright*glow*0.3})`;
-      ctx.fillRect(x,crossTop,1,crossH);
-    }
-  } else if(type==='energo'){
-    const g=(Math.sin(Date.now()*.005+u*5)+1)*.5;
-    const isStripe=u>.2&&u<.8;
-    const isLabel=isStripe&&Math.abs(u-.5)<.18;
-    if(isLabel){
-      ctx.fillStyle=`rgba(0,${Math.floor((200+g*55)*bright)},${Math.floor(160*bright)},${bright})`;
-    } else if(isStripe){
-      ctx.fillStyle=`rgba(0,${Math.floor((120+g*40)*bright)},${Math.floor(90*bright)},${bright})`;
-    } else {
-      ctx.fillStyle=`rgba(0,${Math.floor(70*bright)},${Math.floor(50*bright)},${bright})`;
-    }
-    ctx.fillRect(x,top,1,Math.floor(height*.68));
+    return;
+  }
+
+  if(type==='falling'){
+    // Падающий камень
+    const g2=(Math.sin(Date.now()*.008+u*3)+1)*.5;
+    ctx.fillStyle=`rgba(${Math.floor((120+g2*40)*bright)},${Math.floor((100+g2*30)*bright)},${Math.floor(80*bright)},${bright})`;
+    ctx.fillRect(x,top,1,Math.floor(height*.6));
+    return;
+  }
+}
+
+// Запасная отрисовка мишкана без текстуры
+function drawMishkanFallback(ctx,x,top,height,u,bright){
+  const pulse=(Math.sin(Date.now()*.003)+1)*.5;
+  const eyeT=Math.floor(top+height*.2), eyeH=Math.floor(height*.15);
+  const isEye=(Math.abs(u-.28)<.08||Math.abs(u-.72)<.08);
+  const isArm=(u<.1||u>.9);
+  if(isEye){
+    ctx.fillStyle=`rgba(${Math.floor(26*bright)},${Math.floor(10*bright)},0,${bright})`; ctx.fillRect(x,top,1,eyeT-top);
+    ctx.fillStyle=`rgba(255,${Math.floor(15*bright)},0,${Math.min(1,bright+pulse*.4)})`; ctx.fillRect(x,eyeT,1,eyeH);
+    ctx.fillStyle=`rgba(${Math.floor(22*bright)},${Math.floor(8*bright)},0,${bright})`; ctx.fillRect(x,eyeT+eyeH,1,Math.floor(height*.7)-(eyeT-top)-eyeH);
+  } else if(isArm){
+    ctx.fillStyle=`rgba(${Math.floor(18*bright)},${Math.floor(7*bright)},0,${bright})`; ctx.fillRect(x,Math.floor(top+height*.3),1,Math.floor(height*.45));
+  } else {
+    ctx.fillStyle=`rgba(${Math.floor(25*bright)},${Math.floor(10*bright)},0,${bright})`; ctx.fillRect(x,top,1,Math.floor(height*.88));
   }
 }
 
@@ -672,55 +604,43 @@ function hexRgb(hex){
 }
 
 // ══ MINIMAP ══
-let mmCanvas=null,mmCtx=null;
-const MM_SIZE=110;
-const MM_CELL=MM_SIZE/32;
-
+let mmCtx=null;
+const MM=120, MC=MM/36;
 function initMinimap(){
-  mmCanvas=document.getElementById('minimap-canvas');
-  mmCtx=mmCanvas.getContext('2d');
+  const c=document.getElementById('minimap-canvas');
+  mmCtx=c.getContext('2d');
 }
-
 function renderMinimap(){
-  if(!mmCtx||!G.myPlayer) return;
-  const ctx=mmCtx,C=MM_CELL;
-  ctx.clearRect(0,0,MM_SIZE,MM_SIZE);
-  ctx.fillStyle='#060e06';
-  ctx.fillRect(0,0,MM_SIZE,MM_SIZE);
+  if(!mmCtx||!G.myPlayer||!G.map) return;
+  const ctx=mmCtx, C=MC;
+  ctx.clearRect(0,0,MM,MM);
+  ctx.fillStyle='#060e06'; ctx.fillRect(0,0,MM,MM);
 
   // Карта
-  for(let z=0;z<32;z++) for(let x=0;x<32;x++){
-    if(MAP[z][x]===1){
-      ctx.fillStyle='#183010';
-      ctx.fillRect(x*C,z*C,C-0.3,C-0.3);
-    }
+  for(let z=0;z<MAP_SIZE;z++) for(let x=0;x<MAP_SIZE;x++){
+    if(G.map[z][x]===1){ ctx.fillStyle='#1a3a10'; ctx.fillRect(x*C,z*C,C-.2,C-.2); }
   }
 
   // Выход
-  ctx.fillStyle='rgba(0,220,60,.7)';
-  ctx.fillRect(14*C,0,2*C,C*.6);
+  ctx.fillStyle='rgba(0,220,60,.75)';
+  ctx.fillRect(14*C,0,4*C,C*.7);
+
+  // Зона сбора (мигает желтым когда все страницы собраны)
+  if(G.allPagesCollected){
+    const glow=(Math.sin(Date.now()*.005)+1)*.5;
+    ctx.globalAlpha=0.35+glow*.4;
+    ctx.fillStyle='#ffc800';
+    ctx.beginPath(); ctx.arc(GATHER_POS.x*C,GATHER_POS.z*C,3.5*C,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+  }
 
   // Страницы
   G.items.forEach(item=>{
     if(item.type!=='page') return;
     const glow=(Math.sin(Date.now()*.004+item.x)+1)*.5;
-    ctx.globalAlpha=item.collected?0.3:0.7+glow*.3;
+    ctx.globalAlpha=item.collected?0.25:0.7+glow*.3;
     ctx.fillStyle=item.collected?'#5a4010':'#f0c030';
-    const s=item.collected?C*.35:C*.45;
-    ctx.fillRect(item.x*C-s/2,item.z*C-s/2,s,s);
-    ctx.globalAlpha=1;
-  });
-
-  // Кресты — синий
-  G.items.forEach(item=>{
-    if(item.type!=='cross'||item.collected) return;
-    const glow=(Math.sin(Date.now()*.005+item.x)+1)*.5;
-    ctx.globalAlpha=0.75+glow*.25;
-    ctx.fillStyle=`rgb(80,${Math.floor(80+glow*60)},255)`;
-    const s=C*.5;
-    // Рисуем крестик
-    ctx.fillRect(item.x*C-s/4,item.z*C-s/2,s/2,s);    // вертикаль
-    ctx.fillRect(item.x*C-s/2,item.z*C-s/4,s,s/2);    // горизонталь
+    const s=item.collected?C*.3:C*.42; ctx.fillRect(item.x*C-s/2,item.z*C-s/2,s,s);
     ctx.globalAlpha=1;
   });
 
@@ -730,44 +650,42 @@ function renderMinimap(){
     const glow=(Math.sin(Date.now()*.006+item.z)+1)*.5;
     ctx.globalAlpha=0.65+glow*.35;
     ctx.fillStyle=`rgb(0,${Math.floor(180+glow*75)},140)`;
-    const s=C*.4;
-    ctx.fillRect(item.x*C-s/2,item.z*C-s/2,s,s);
+    const s=C*.38; ctx.fillRect(item.x*C-s/2,item.z*C-s/2,s,s);
+    ctx.globalAlpha=1;
+  });
+
+  // Кресты — синий крестик
+  G.items.forEach(item=>{
+    if(item.type!=='cross'||item.collected) return;
+    const glow=(Math.sin(Date.now()*.005+item.x)+1)*.5;
+    ctx.globalAlpha=0.7+glow*.3;
+    ctx.fillStyle=`rgb(80,${Math.floor(80+glow*60)},255)`;
+    const s=C*.45;
+    ctx.fillRect(item.x*C-s/4,item.z*C-s/2,s/2,s);
+    ctx.fillRect(item.x*C-s/2,item.z*C-s/4,s,s/2);
     ctx.globalAlpha=1;
   });
 
   // Другие игроки
   Object.values(G.players).forEach(p=>{
     if(p.id===myId) return;
-    ctx.globalAlpha=0.88;
-    ctx.fillStyle=p.caught?'#880000':p.color;
-    ctx.beginPath();
-    ctx.arc(p.x*C,p.z*C,C*.55,0,Math.PI*2);
-    ctx.fill();
-    ctx.globalAlpha=1;
+    ctx.globalAlpha=0.88; ctx.fillStyle=p.caught?'#880000':p.color;
+    ctx.beginPath(); ctx.arc(p.x*C,p.z*C,C*.55,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
   });
 
-  // Мой игрок + стрелка направления
+  // Мой игрок + направление
   const mx=G.myPlayer.x*C, mz=G.myPlayer.z*C;
-  ctx.fillStyle='#fff';
-  ctx.globalAlpha=0.95;
-  ctx.beginPath();
-  ctx.arc(mx,mz,C*.65,0,Math.PI*2);
-  ctx.fill();
+  ctx.fillStyle='#fff'; ctx.globalAlpha=0.95;
+  ctx.beginPath(); ctx.arc(mx,mz,C*.65,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(mx,mz);
+  ctx.lineTo(mx+Math.sin(G.camYaw)*C*2.2,mz+Math.cos(G.camYaw)*C*2.2); ctx.stroke();
   ctx.globalAlpha=1;
-  ctx.strokeStyle='rgba(255,255,255,.75)';
-  ctx.lineWidth=1.2;
-  ctx.beginPath();
-  ctx.moveTo(mx,mz);
-  ctx.lineTo(mx+Math.sin(G.camYaw)*C*2.2,mz+Math.cos(G.camYaw)*C*2.2);
-  ctx.stroke();
 
-  // Рамка
-  ctx.strokeStyle='#1a3a12';
-  ctx.lineWidth=1;
-  ctx.strokeRect(0,0,MM_SIZE,MM_SIZE);
+  ctx.strokeStyle='#1a3a12'; ctx.lineWidth=1; ctx.strokeRect(0,0,MM,MM);
 }
 
-// ── MESSAGES ──
+// ══ MESSAGES ══
 let gameStarted=false;
 function handleMessage(msg){
   switch(msg.type){
@@ -786,47 +704,45 @@ function handleMessage(msg){
     case 'error': document.getElementById('join-error').textContent=msg.message; break;
 
     case 'game_start':
-      if(gameStarted) return;
-      gameStarted=true;
-      // Предметы берём с сервера (он знает какие собраны)
-      G.items=msg.items;
+      if(gameStarted) return; gameStarted=true;
+      G.map=msg.map; G.items=msg.items;
       msg.players.forEach(p=>{G.players[p.id]={...p,caught:false,hp:100};});
       G.myPlayer=G.players[myId];
       if(!G.myPlayer){console.error('no myPlayer');return;}
-      // Позиции спавна по индексу
-      const spIdx=msg.players.findIndex(p=>p.id===myId);
-      const sp=SPAWN_PTS[Math.max(0,Math.min(3,spIdx))];
-      G.myPlayer.x=sp.x; G.myPlayer.z=sp.z;
       G.camYaw=Math.PI; G.camPitch=0;
       G.mishkan.x=MISHKAN_START.x; G.mishkan.z=MISHKAN_START.z;
       startGameClient(); break;
 
     case 'game_state':
+      // Обновляем карту если она изменилась (побег)
+      if(msg.map) G.map=msg.map;
       G.mishkan=msg.mishkan;
       msg.players.forEach(p=>{
         if(!G.players[p.id]) return;
-        if(p.id===myId){
-          // Своего игрока НЕ телепортируем — только состояние
-          G.players[p.id].caught=p.caught;
-          G.players[p.id].hp=p.hp;
-        } else {
-          Object.assign(G.players[p.id],p);
-        }
+        if(p.id===myId){ G.players[p.id].caught=p.caught; G.players[p.id].hp=p.hp; }
+        else Object.assign(G.players[p.id],p);
       });
       G.items=msg.items;
+      if(msg.escapeActive&&!G.escapeActive){
+        // Сервер только что включил escape
+      }
+      G.escapeActive=msg.escapeActive||false;
       updateHUD();
       if(G.players[myId]) G.myPlayer=G.players[myId];
       updateMishkanFX(); break;
 
+    case 'escape_start':
+      startEscapeSequence(); break;
+
     case 'player_caught':
       if(msg.playerId===myId){G.caught=true;triggerCaught();}
-      else{playAudio('caught');showBobik(`${G.players[msg.playerId]?.name||'Игрок'} пойман Мишканом!`);}
+      else{playAudio('caught');showBobik(`${G.players[msg.playerId]?.name||'Игрок'} пойман!`);}
       if(G.players[msg.playerId]) G.players[msg.playerId].caught=true;
       updateHUD(); break;
 
     case 'player_healed':
       if(G.players[msg.playerId]) G.players[msg.playerId].caught=false;
-      if(msg.playerId===myId){G.caught=false;document.getElementById('caught-msg').style.display='none';document.getElementById('overlay-red').classList.remove('active');showBobik('Тебя вылечили! Беги!');}
+      if(msg.playerId===myId){G.caught=false;document.getElementById('caught-msg').style.display='none';document.getElementById('overlay-red').classList.remove('active');showBobik('Тебя вылечили!');}
       updateHUD(); break;
 
     case 'item_collected':
@@ -834,55 +750,133 @@ function handleMessage(msg){
       if(msg.itemType==='page'){
         G.pages=G.items.filter(i=>i.type==='page'&&i.collected).length;
         const rem=10-G.pages;
-        if(rem===0){G.allPagesCollected=true;showBobik('ВСЕ 10 СТРАНИЦ! Бегите к выходу на севере!');}
-        else showBobik(`Страница найдена! Осталось: ${rem}`);
+        if(rem===0){G.allPagesCollected=true;showBobik('ВСЕ 10 СТРАНИЦ! Соберитесь в ЖЕЛТОЙ ЗОНЕ на юге!');}
+        else showBobik(`Страница! Осталось: ${rem}`);
         updatePagesHUD();
       }
       if(msg.itemType==='energo'&&msg.playerId===myId){
         G.adrenaline=true; G.adrenalineTimer=8000;
         document.getElementById('adrenaline-bar').style.display='block';
-        showBobik('НАНОДРЕНАЛИН! Летишь как ракета!');
+        showBobik('НАНОДРЕНАЛИН!');
+      }
+      if(msg.itemType==='cross'&&msg.playerId===myId){
+        G.hasCross=true;
+        document.getElementById('cross-hud').style.display='flex';
+        showBobik('Ты нашёл КРЕСТ! Нажми G рядом с Мишканом!');
       }
       break;
+
+    case 'mishkan_banished':
+      G.mishkanBanished=true; G.mishkanBanishTimer=msg.duration;
+      showBobik('Мишкан изгнан на 30 секунд!');
+      break;
+
     case 'game_won': showEndScreen(true); break;
     case 'game_lost': showEndScreen(false); break;
   }
 }
 
-// ── HUD ──
+// ══ КАТСЦЕНА ПОБЕГА ══
+function startEscapeSequence(){
+  G.escapeActive=true;
+  G.inputDisabled=true;
+  // Запускаем музыку побега
+  if(AUDIO.bg){AUDIO.bg.pause();}
+  AUDIO.escape.play().catch(()=>{});
+  G.escapeAudioStarted=true;
+  showBobik('БЕГИТЕ! МИШКАН ВЫХОДИТ!!!');
+
+  // Тряска нарастает 9.5 секунд
+  let shakeIntensity=0;
+  const shakeIv=setInterval(()=>{
+    shakeIntensity+=0.3;
+    const si=Math.min(shakeIntensity,8);
+    G.screenShakeX=(Math.random()-0.5)*si*2;
+    G.screenShakeY=(Math.random()-0.5)*si*2;
+  },50);
+
+  // Камера плавно разворачивается к Мишкану (на 180°)
+  const startYaw=G.camYaw;
+  const targetYaw=startYaw+Math.PI;
+  const startT=performance.now();
+  const rotateDur=4000;
+  function rotateCamera(){
+    const elapsed=(performance.now()-startT)/rotateDur;
+    if(elapsed<1){
+      G.camYaw=startYaw+Math.PI*Math.min(1,elapsed*1.2);
+      requestAnimationFrame(rotateCamera);
+    }
+  }
+  rotateCamera();
+
+  // Через 9.5 секунды — возвращаем управление и начинаем падающие объекты
+  setTimeout(()=>{
+    clearInterval(shakeIv);
+    G.screenShakeX=0; G.screenShakeY=0;
+    G.inputDisabled=false;
+    G.camYaw=targetYaw;
+    startFallingObjects();
+    // Таймер отсчёта
+    let timeLeft=Math.floor(101.5-9.5);
+    const timerEl=document.getElementById('escape-timer');
+    timerEl.style.display='block';
+    const countIv=setInterval(()=>{
+      timeLeft--;
+      timerEl.textContent=`⏰ ${Math.floor(timeLeft/60)}:${String(timeLeft%60).padStart(2,'0')}`;
+      if(timeLeft<=0){clearInterval(countIv);timerEl.style.display='none';}
+    },1000);
+    showBobik('БЕГИТЕ К ВЫХОДУ! У вас 1:32!');
+  },9500);
+}
+
+function startFallingObjects(){
+  G.fallingObjects=[];
+  const iv=setInterval(()=>{
+    if(!G.escapeActive||!G.myPlayer) return;
+    // Добавляем камень впереди игрока
+    const offset=(Math.random()-0.5)*8;
+    const fwdX=G.myPlayer.x+Math.sin(G.camYaw)*5+offset;
+    const fwdZ=G.myPlayer.z+Math.cos(G.camYaw)*5+offset;
+    G.fallingObjects.push({x:fwdX,z:fwdZ,y:1.8,id:Date.now()});
+  },1500);
+  // Обновление падения в gameLoop
+}
+
+// ══ HUD ══
 function updateHUD(){
-  const c=document.getElementById('hud-players');c.innerHTML='';
+  const c=document.getElementById('hud-players'); c.innerHTML='';
   Object.values(G.players).forEach(p=>{
-    const d=document.createElement('div');d.className='hud-player';
+    const d=document.createElement('div'); d.className='hud-player';
     d.innerHTML=`<div class="hud-avatar ${p.caught?'caught':''}" style="background:${p.color}">${p.name[0]}</div><div><div class="hud-name">${p.name}${p.id===myId?' (ты)':''}</div><div class="hud-hp-bar"><div class="hud-hp-fill" style="width:${p.hp||0}%"></div></div></div>`;
     c.appendChild(d);
   });
 }
 function updatePagesHUD(){
-  const el=document.getElementById('hud-pages');el.innerHTML='';
+  const el=document.getElementById('hud-pages'); el.innerHTML='';
   const col=G.items.filter(i=>i.type==='page'&&i.collected).length;
   for(let i=0;i<10;i++){
-    const d=document.createElement('div');d.className='page-icon'+(i<col?' collected':'');
-    d.id=`page-${i}`;d.textContent='📄';el.appendChild(d);
+    const d=document.createElement('div');
+    d.className='page-icon'+(i<col?' collected':'');
+    d.textContent='📄'; el.appendChild(d);
   }
 }
 function d2(a,b){return Math.sqrt((a.x-b.x)**2+(a.z-b.z)**2);}
 
-// ── EFFECTS ──
-let mzTO=null,lastInView=false;
+// ══ EFFECTS ══
+let mzTO=null, lastInView=false;
 function updateMishkanFX(){
   if(!G.myPlayer||G.caught) return;
   const dist=d2(G.myPlayer,G.mishkan);
-  setBgVol(.04+Math.max(0,1-dist/20)*.76);
+  if(!G.mishkan.banished) setBgVol(.04+Math.max(0,1-dist/22)*.76);
   const pulse=document.getElementById('overlay-pulse');
-  if(dist<8){pulse.classList.add('beating');pulse.style.animationDuration=`${Math.max(.25,.8-(8-dist)*.07)}s`;}
+  if(dist<8&&!G.mishkan.banished){pulse.classList.add('beating');pulse.style.animationDuration=`${Math.max(.25,.85-(8-dist)*.08)}s`;}
   else pulse.classList.remove('beating');
   const inView=mishkanInFOV();
   if(inView&&!lastInView&&!mzTO) triggerMishkanSeen();
   lastInView=inView;
 }
 function mishkanInFOV(){
-  if(!G.myPlayer) return false;
+  if(!G.myPlayer||G.mishkan.banished) return false;
   const dx=G.mishkan.x-G.myPlayer.x,dz=G.mishkan.z-G.myPlayer.z;
   if(Math.sqrt(dx*dx+dz*dz)>12) return false;
   let diff=Math.atan2(dx,dz)-G.camYaw;
@@ -897,24 +891,73 @@ function triggerMishkanSeen(){
 function triggerCaught(){
   document.getElementById('overlay-red').classList.add('active');
   document.getElementById('caught-msg').style.display='block';
-  const s=document.getElementById('overlay-screamer');s.classList.add('show');playAudio('scream');
+  const s=document.getElementById('overlay-screamer'); s.classList.add('show'); playAudio('scream');
   setTimeout(()=>s.classList.remove('show'),1500);
 }
 
-// ── BOBIK ──
-let bobTO=null;
-const BM=['Тихо-тихо... я его чувствую.','Мишкан не злой. Просто одинокий.','На карте видны все страницы!','Энергос поможет убежать!','Держитесь вместе!'];
-function showBobik(msg){
-  const el=document.getElementById('bobik-msg');el.textContent=msg;el.classList.add('show');
-  clearTimeout(bobTO);bobTO=setTimeout(()=>el.classList.remove('show'),4500);
+// ══ ИЗГНАНИЕ КРЕСТОМ ══
+function useCross(){
+  if(!G.hasCross||G.crossUsing) return;
+  G.crossUsing=true;
+  // Анимация подъёма
+  const startT=performance.now();
+  function animCross(){
+    const t=(performance.now()-startT)/600;
+    G.crossAnim=Math.min(1,t);
+    if(t<1) requestAnimationFrame(animCross);
+    else {
+      // Посылаем событие на сервер
+      send({type:'use_cross'});
+      playAudio('banish');
+      // Синий overlay
+      document.getElementById('overlay-blue').style.background='rgba(30,30,220,0.35)';
+      setTimeout(()=>{document.getElementById('overlay-blue').style.background='rgba(30,30,220,0)';},2000);
+      // Опускаем крест
+      setTimeout(()=>{
+        G.crossAnim=0; G.crossUsing=false; G.hasCross=false;
+        document.getElementById('cross-hud').style.display='none';
+      },2500);
+    }
+  }
+  requestAnimationFrame(animCross);
 }
 
-// ── CONTROLS ──
+// ══ BOBIK ══
+let bobTO=null;
+const BM=['Тихо-тихо... я его чувствую.','Мишкан не злой. Просто одинокий.','На карте видны все страницы!','Энергос поможет убежать!','Держитесь вместе!','Кресты помечены синим на карте!'];
+function showBobik(msg){
+  const el=document.getElementById('bobik-msg'); el.textContent=msg; el.classList.add('show');
+  clearTimeout(bobTO); bobTO=setTimeout(()=>el.classList.remove('show'),4500);
+}
+
+// ══ CONTROLS ══
 let ctrlInited=false;
+// Геймпад
+const GP={ax:[0,0,0,0],btn:[],connected:false};
+window.addEventListener('gamepadconnected',e=>{
+  GP.connected=true;
+  document.getElementById('gamepad-hint').style.display='block';
+  setTimeout(()=>document.getElementById('gamepad-hint').style.display='none',3000);
+});
+
+function pollGamepad(){
+  const pads=navigator.getGamepads?navigator.getGamepads():[];
+  for(const pad of pads){
+    if(!pad) continue;
+    GP.ax[0]=pad.axes[0]||0; // левый стик X
+    GP.ax[1]=pad.axes[1]||0; // левый стик Y
+    GP.ax[2]=pad.axes[2]||0; // правый стик X (камера)
+    GP.ax[3]=pad.axes[3]||0; // правый стик Y (pitch)
+    GP.btn=pad.buttons.map(b=>b.pressed);
+    if(Math.abs(GP.ax[0])>.1||Math.abs(GP.ax[1])>.1) GP.connected=true;
+  }
+}
+
 function initControls(){
-  if(ctrlInited) return;
-  ctrlInited=true;
-  let camId=null,camLX=0,camLY=0;
+  if(ctrlInited) return; ctrlInited=true;
+
+  // Камера — свайп
+  let camId=null, camLX=0, camLY=0;
   const SENS=0.0042;
   document.addEventListener('touchstart',e=>{
     for(const t of e.changedTouches){
@@ -926,15 +969,17 @@ function initControls(){
   document.addEventListener('touchmove',e=>{
     for(const t of e.changedTouches){
       if(t.identifier!==camId) continue;
-      G.camYaw+=(t.clientX-camLX)*SENS;  // ✅ свайп вправо = поворот вправо
-      G.camPitch+=(t.clientY-camLY)*SENS*.5; // ✅ свайп вниз = смотрим вниз
-      G.camPitch=Math.max(-.42,Math.min(.42,G.camPitch));
-      camLX=t.clientX;camLY=t.clientY;
+      if(G.inputDisabled) continue;
+      G.camYaw+=(t.clientX-camLX)*SENS;
+      G.camPitch-=(t.clientY-camLY)*SENS*.5;
+      G.camPitch=Math.max(-.5,Math.min(.5,G.camPitch));
+      camLX=t.clientX; camLY=t.clientY;
     }
   },{passive:true});
   document.addEventListener('touchend',e=>{for(const t of e.changedTouches)if(t.identifier===camId)camId=null;},{passive:true});
 
-  const jZ=document.getElementById('joystick-zone'),knob=document.getElementById('joystick-knob'),KR=42;
+  // Джойстик
+  const jZ=document.getElementById('joystick-zone'), knob=document.getElementById('joystick-knob'), KR=42;
   let jId=null;
   jZ.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();const t=e.changedTouches[0];jId=t.identifier;updJoy(t);},{passive:false});
   jZ.addEventListener('touchmove',e=>{e.preventDefault();e.stopPropagation();for(const t of e.changedTouches)if(t.identifier===jId)updJoy(t);},{passive:false});
@@ -947,155 +992,189 @@ function initControls(){
     G.joyX=dx/KR; G.joyZ=dy/KR;
   }
   function jRel(e){for(const t of e.changedTouches)if(t.identifier===jId){jId=null;G.joyX=0;G.joyZ=0;knob.style.transform='translate(-50%,-50%)';}}
-  jZ.addEventListener('touchend',jRel,{passive:false});
-  jZ.addEventListener('touchcancel',jRel,{passive:false});
+  jZ.addEventListener('touchend',jRel,{passive:false}); jZ.addEventListener('touchcancel',jRel,{passive:false});
 
+  // Кнопки
   document.getElementById('btn-interact').addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();G.interact=true;},{passive:false});
   document.getElementById('btn-interact').addEventListener('touchend',e=>{e.preventDefault();G.interact=false;},{passive:false});
   document.getElementById('btn-sprint').addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();G.sprinting=true;},{passive:false});
   document.getElementById('btn-sprint').addEventListener('touchend',e=>{e.preventDefault();G.sprinting=false;},{passive:false});
+  document.getElementById('btn-cross').addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();useCross();},{passive:false});
 
+  // Клавиатура
   window.addEventListener('keydown',e=>{
-    if(e.key==='ArrowUp'||e.key==='w')G.keys.up=true;
-    if(e.key==='ArrowDown'||e.key==='s')G.keys.down=true;
-    if(e.key==='ArrowLeft'||e.key==='a')G.keys.left=true;
-    if(e.key==='ArrowRight'||e.key==='d')G.keys.right=true;
-    if(e.key==='e'||e.key==='E')G.interact=true;
-    if(e.key==='Shift')G.sprinting=true;
+    if(e.key==='ArrowUp'||e.key==='w') G.keys.up=true;
+    if(e.key==='ArrowDown'||e.key==='s') G.keys.down=true;
+    if(e.key==='ArrowLeft'||e.key==='a') G.keys.left=true;
+    if(e.key==='ArrowRight'||e.key==='d') G.keys.right=true;
+    if(e.key==='e'||e.key==='E') G.interact=true;
+    if(e.key==='Shift') G.sprinting=true;
+    if(e.key==='g'||e.key==='G') useCross();
+    // Вертикальный взгляд клавиатурой
+    if(e.key==='PageUp') G.camPitch=Math.max(-.5,G.camPitch-.05);
+    if(e.key==='PageDown') G.camPitch=Math.min(.5,G.camPitch+.05);
   });
   window.addEventListener('keyup',e=>{
-    if(e.key==='ArrowUp'||e.key==='w')G.keys.up=false;
-    if(e.key==='ArrowDown'||e.key==='s')G.keys.down=false;
-    if(e.key==='ArrowLeft'||e.key==='a')G.keys.left=false;
-    if(e.key==='ArrowRight'||e.key==='d')G.keys.right=false;
-    if(e.key==='e'||e.key==='E')G.interact=false;
-    if(e.key==='Shift')G.sprinting=false;
+    if(e.key==='ArrowUp'||e.key==='w') G.keys.up=false;
+    if(e.key==='ArrowDown'||e.key==='s') G.keys.down=false;
+    if(e.key==='ArrowLeft'||e.key==='a') G.keys.left=false;
+    if(e.key==='ArrowRight'||e.key==='d') G.keys.right=false;
+    if(e.key==='e'||e.key==='E') G.interact=false;
+    if(e.key==='Shift') G.sprinting=false;
   });
 }
 
-// ── GAME LOOP ──
-let lastSend=0,bobTimer=30,loopId=null,lastTS=performance.now();
+// ══ GAME LOOP ══
+let lastSend=0, bobTimer=30, loopId=null, lastTS=performance.now();
 
 function startGameClient(){
   showScreen('screen-game');
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     initRC(); initMinimap(); buildPagesHUD(); initControls();
     AUDIO.bg?.play().catch(()=>{});
-    showBobik('Привет... я Бобик. Мишкан в своём логове!');
+    showBobik('Привет... я Бобик. Мишкан в логове на юго-востоке!');
     startGraceUI();
     if(loopId!==null) cancelAnimationFrame(loopId);
     loopId=requestAnimationFrame(gameLoop);
   }));
 }
-
 function buildPagesHUD(){
   const el=document.getElementById('hud-pages');el.innerHTML='';
-  for(let i=0;i<10;i++){const d=document.createElement('div');d.className='page-icon';d.id=`page-${i}`;d.textContent='📄';el.appendChild(d);}
+  for(let i=0;i<10;i++){const d=document.createElement('div');d.className='page-icon';d.textContent='📄';el.appendChild(d);}
 }
-
 function startGraceUI(){
   let t=8;
   const el=document.getElementById('grace-timer');
-  el.textContent=`⚠️ Мишкан выйдет через ${t}с`;
-  el.classList.add('show');
-  const iv=setInterval(()=>{
-    t--;
-    if(t<=0){el.classList.remove('show');clearInterval(iv);}
-    else el.textContent=`⚠️ Мишкан выйдет через ${t}с`;
-  },1000);
+  el.textContent=`⚠️ Мишкан выйдет через ${t}с`; el.classList.add('show');
+  const iv=setInterval(()=>{ t--; if(t<=0){el.classList.remove('show');clearInterval(iv);}else el.textContent=`⚠️ Мишкан выйдет через ${t}с`; },1000);
 }
 
 function gameLoop(ts){
   loopId=requestAnimationFrame(gameLoop);
-  const dt=Math.min((ts-lastTS)/1000,.05);
-  lastTS=ts;
-  if(!G.myPlayer) return;
+  const dt=Math.min((ts-lastTS)/1000,.05); lastTS=ts;
+  if(!G.myPlayer||!G.map) return;
 
-  // ── ДВИЖЕНИЕ ──
-  if(!G.caught){
-    const spd=(G.adrenaline?2.3:1)*(G.sprinting&&G.stamina>0?1.65:1)*3.1*dt;
-    const fx=Math.sin(G.camYaw),fz=Math.cos(G.camYaw);
-    const rx=Math.cos(G.camYaw),rz=-Math.sin(G.camYaw);
-    let mx=0,mz=0;
-    if(G.keys.up){mx+=fx;mz+=fz;}
-    if(G.keys.down){mx-=fx;mz-=fz;}
-    if(G.keys.left) G.camYaw+=2.1*dt;
-    if(G.keys.right) G.camYaw-=2.1*dt;
-    if(Math.abs(G.joyX)>.06||Math.abs(G.joyZ)>.06){
-      mx+=fx*(-G.joyZ)+rx*G.joyX;
-      mz+=fz*(-G.joyZ)+rz*G.joyX;
-    }
+  // Геймпад
+  pollGamepad();
+
+  if(!G.caught&&!G.inputDisabled&&!G.stuned){
+    const spd=(G.adrenaline?2.3:1)*(G.sprinting&&G.stamina>0?1.65:1)*3.0*dt;
+    const fx=Math.sin(G.camYaw), fz=Math.cos(G.camYaw);
+    const rx=Math.cos(G.camYaw), rz=-Math.sin(G.camYaw);
+    let mx=0, mz=0;
+    // Клавиатура
+    if(G.keys.up){mx+=fx;mz+=fz;} if(G.keys.down){mx-=fx;mz-=fz;}
+    if(G.keys.left) G.camYaw+=2.0*dt; if(G.keys.right) G.camYaw-=2.0*dt;
+    // Джойстик
+    if(Math.abs(G.joyX)>.06||Math.abs(G.joyZ)>.06){mx+=fx*(-G.joyZ)+rx*G.joyX;mz+=fz*(-G.joyZ)+rz*G.joyX;}
+    // Геймпад левый стик
+    const gpX=Math.abs(GP.ax[0])>.12?GP.ax[0]:0, gpY=Math.abs(GP.ax[1])>.12?GP.ax[1]:0;
+    if(gpX||gpY){mx+=fx*(-gpY)+rx*gpX;mz+=fz*(-gpY)+rz*gpX;}
+    // Геймпад правый стик = камера
+    const gcX=Math.abs(GP.ax[2])>.12?GP.ax[2]:0, gcY=Math.abs(GP.ax[3])>.12?GP.ax[3]:0;
+    G.camYaw-=gcX*2.5*dt;
+    G.camPitch-=gcY*1.8*dt;
+    G.camPitch=Math.max(-.5,Math.min(.5,G.camPitch));
+    // Геймпад кнопки
+    if(GP.btn[0]) G.interact=true; // A = взаимодействие
+    if(GP.btn[4]) G.sprinting=true; else if(!G.keys.sprint) G.sprinting=false; // LB = спринт
+    if(GP.btn[2]) useCross(); // X = крест
+
     const moving=mx!==0||mz!==0;
     if(moving){
       const len=Math.sqrt(mx*mx+mz*mz);
       const nx=G.myPlayer.x+(mx/len)*spd, nz=G.myPlayer.z+(mz/len)*spd;
       const cx=Math.floor(G.myPlayer.x), cz=Math.floor(G.myPlayer.z);
-      // Коллизия с padding 0.25
-      const bx=nx+(mx/len)*.25, bz=nz+(mz/len)*.25;
-      if(MAP[cz]&&MAP[cz][Math.floor(bx)]!==1) G.myPlayer.x=nx;
-      if(MAP[Math.floor(bz)]&&MAP[Math.floor(bz)][cx]!==1) G.myPlayer.z=nz;
+      const bpad=0.22;
+      if(G.map[cz]&&G.map[cz][Math.floor(nx+bpad*(mx/len))]!==1) G.myPlayer.x=nx;
+      if(G.map[Math.floor(nz+bpad*(mz/len))]&&G.map[Math.floor(nz+bpad*(mz/len))][cx]!==1) G.myPlayer.z=nz;
     }
     // Стамина
     if(G.sprinting&&moving) G.stamina=Math.max(0,G.stamina-22*dt);
     else G.stamina=Math.min(100,G.stamina+12*dt);
     document.getElementById('stamina-fill').style.width=G.stamina+'%';
     // Адреналин
-    if(G.adrenaline){
-      G.adrenalineTimer-=dt*1000;
-      document.getElementById('adrenaline-fill').style.width=Math.max(0,G.adrenalineTimer/80)+'%';
-      if(G.adrenalineTimer<=0){G.adrenaline=false;document.getElementById('adrenaline-bar').style.display='none';}
-    }
+    if(G.adrenaline){G.adrenalineTimer-=dt*1000;document.getElementById('adrenaline-fill').style.width=Math.max(0,G.adrenalineTimer/80)+'%';if(G.adrenalineTimer<=0){G.adrenaline=false;document.getElementById('adrenaline-bar').style.display='none';}}
     // Бобинг
     const tBob=moving?(G.sprinting?.08:.044):0;
     G.bobbingAmt+=(tBob-G.bobbingAmt)*Math.min(1,10*dt);
-    if(moving){G.bobbingT+=dt*(G.sprinting?9:5.5);}
-    G.camPitch=Math.sin(G.bobbingT)*G.bobbingAmt*.45;
+    if(moving) G.bobbingT+=dt*(G.sprinting?9:5.5);
     // Шаги
-    if(moving){G.footstepTimer-=dt;if(G.footstepTimer<=0){playFootstep();G.footstepTimer=G.sprinting?.27:.44;}}
-    else G.footstepTimer=0;
+    if(moving){G.footstepTimer-=dt;if(G.footstepTimer<=0){playFootstep();G.footstepTimer=G.sprinting?.27:.44;}}else G.footstepTimer=0;
 
-    // Предметы рядом
+    // Предметы
     let nearItem=false,nearData=null;
-    G.items.forEach(i=>{if(!i.collected&&d2(G.myPlayer,i)<1.2){nearItem=true;nearData=i;}});
+    G.items.forEach(i=>{if(!i.collected&&d2(G.myPlayer,i)<1.3){nearItem=true;nearData=i;}});
     document.getElementById('near-item').style.display=nearItem?'block':'none';
-    if(nearItem) document.getElementById('near-item').textContent=nearData.type==='page'?'[ E ] Взять страницу':'[ E ] Выпить энергос';
+    if(nearItem) document.getElementById('near-item').textContent=nearData.type==='page'?'[ E ] Взять страницу':nearData.type==='energo'?'[ E ] Выпить энергос':'[ E ] Взять крест';
     document.getElementById('exit-indicator').style.display=(G.allPagesCollected&&d2(G.myPlayer,EXIT_POS)<2.5)?'block':'none';
+    // Зона сбора
+    const inGather=G.allPagesCollected&&d2(G.myPlayer,GATHER_POS)<5;
+    document.getElementById('gather-indicator').style.display=(G.allPagesCollected&&!G.escapeActive)?'block':'none';
 
     if(G.interact){
-      Object.values(G.players).forEach(p=>{if(p.caught&&p.id!==myId&&d2(G.myPlayer,p)<2.5) send({type:'heal_player',targetId:p.id});});
+      Object.values(G.players).forEach(p=>{if(p.caught&&p.id!==myId&&d2(G.myPlayer,p)<2.5)send({type:'heal_player',targetId:p.id});});
     }
 
     // Стрелка выхода
     if(G.allPagesCollected){
-      const dx=EXIT_POS.x-G.myPlayer.x,dz2=EXIT_POS.z-G.myPlayer.z;
+      const target=G.escapeActive?EXIT_POS:GATHER_POS;
+      const dx=target.x-G.myPlayer.x,dz2=target.z-G.myPlayer.z;
       let diff=Math.atan2(dx,dz2)-G.camYaw;
       while(diff>Math.PI)diff-=2*Math.PI; while(diff<-Math.PI)diff+=2*Math.PI;
       const arrow=document.getElementById('exit-arrow');
-      if(Math.abs(diff)>.35){arrow.textContent=`ВЫХОД ${diff>0?'◀':'▶'} ${Math.abs(Math.round(diff*180/Math.PI))}°`;arrow.style.display='block';}
+      if(Math.abs(diff)>.35){arrow.textContent=G.escapeActive?`ВЫХОД ${diff>0?'◀':'▶'} ${Math.abs(Math.round(diff*180/Math.PI))}°`:`ТОЧКА СБОРА ${diff>0?'◀':'▶'} ${Math.abs(Math.round(diff*180/Math.PI))}°`;arrow.style.display='block';}
       else arrow.style.display='none';
     }
 
-    // Дистанция до пойманных
-    const cp=Object.values(G.players).filter(p=>p.caught&&p.id!==myId);
-    if(cp.length>0){
-      const near=cp.reduce((a,b)=>d2(G.myPlayer,a)<d2(G.myPlayer,b)?a:b);
-      if(d2(G.myPlayer,near)<9) showBobik(`${near.name} пойман! До него ${Math.round(d2(G.myPlayer,near))} м`);
-    }
-  } else {
-    // Пойман — качаем камеру
+  } else if(G.stuned){
+    G.stunTimer-=dt; if(G.stunTimer<=0){G.stuned=false;}
+  } else if(G.caught){
     G.camPitch=Math.sin(ts*.0008)*.08-.12;
     const free=Object.values(G.players).filter(p=>!p.caught&&p.id!==myId);
-    if(free.length>0){
-      const near=free.reduce((a,b)=>d2(G.myPlayer,a)<d2(G.myPlayer,b)?a:b);
-      document.getElementById('distance-to-heal').textContent=`До спасения: ${Math.round(d2(G.myPlayer,near))} м — ${near.name}`;
-    }
+    if(free.length>0){const near=free.reduce((a,b)=>d2(G.myPlayer,a)<d2(G.myPlayer,b)?a:b);document.getElementById('distance-to-heal').textContent=`До спасения: ${Math.round(d2(G.myPlayer,near))} м — ${near.name}`;}
   }
 
-  // RENDER
+  // Падающие объекты
+  if(G.escapeActive){
+    G.fallingObjects=G.fallingObjects.filter(obj=>{
+      obj.y-=dt*1.2;
+      if(obj.y<=0){
+        obj.y=0;
+        // Проверяем коллизию с игроком
+        if(G.myPlayer&&d2(G.myPlayer,obj)<0.9&&!G.stuned){
+          G.stuned=true; G.stunTimer=1.5;
+          G.screenShakeX=4; G.screenShakeY=4;
+          setTimeout(()=>{G.screenShakeX=0;G.screenShakeY=0;},300);
+          showBobik('Камень! Оглушён!');
+        }
+        return false;
+      }
+      return true;
+    });
+  }
+
+  // Бобинг pitch
+  if(!G.caught&&!G.inputDisabled){
+    const pitchBob=Math.sin(G.bobbingT)*G.bobbingAmt*.4;
+    // Не перезаписываем camPitch — он управляется отдельно
+    // Добавляем бобинг как небольшое смещение горизонта
+  }
+
+  // Мишкан изгнан — таймер
+  if(G.mishkanBanished){
+    G.mishkanBanishTimer-=dt;
+    if(G.mishkanBanishTimer<=0){G.mishkanBanished=false;showBobik('Мишкан вернулся!');}
+  }
+
+  // Плавное затухание тряски
+  G.screenShakeX*=0.85; G.screenShakeY*=0.85;
+  if(Math.abs(G.screenShakeX)<0.1) G.screenShakeX=0;
+  if(Math.abs(G.screenShakeY)<0.1) G.screenShakeY=0;
+
   renderScene();
   renderMinimap();
 
-  // SEND
   const now=performance.now();
   if(now-lastSend>50){
     lastSend=now;
@@ -1107,10 +1186,10 @@ function gameLoop(ts){
 }
 
 function showEndScreen(won){
-  if(AUDIO.bg)AUDIO.bg.pause();
+  if(AUDIO.bg)AUDIO.bg.pause(); if(AUDIO.escape)AUDIO.escape.pause();
   document.getElementById('end-title').textContent=won?'ВЫ ВЫБРАЛИСЬ!':'МИШКАН ПОБЕДИЛ';
   document.getElementById('end-title').style.color=won?'#4ac84a':'#ff3030';
-  document.getElementById('end-msg').textContent=won?'Бобик счастлив. Приходите ещё... только не ночью.':'Мишкан поймал всех. Бобик грустит.';
+  document.getElementById('end-msg').textContent=won?'Бобик счастлив. Только не ночью...':'Мишкан поймал всех. Бобик грустит.';
   showScreen('screen-end');
 }
 </script>
