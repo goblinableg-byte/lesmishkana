@@ -60,6 +60,24 @@ function generateGridMap() {
 }
 
 // Позиции предметов на карте 36x36
+function isFreeCell(map, x, z){
+  const mx=Math.floor(x), mz=Math.floor(z);
+  if(mz<0||mz>=36||mx<0||mx>=36) return false;
+  return map[mz][mx]===0;
+}
+
+function findFreeNear(map, x, z){
+  // Ищем свободную клетку рядом если текущая занята
+  if(isFreeCell(map,x,z)) return {x,z};
+  for(let r=1;r<=4;r++){
+    for(let dz=-r;dz<=r;dz++) for(let dx=-r;dx<=r;dx++){
+      const nx=x+dx, nz=z+dz;
+      if(isFreeCell(map,nx+0.5,nz+0.5)) return {x:nx+0.5,z:nz+0.5};
+    }
+  }
+  return {x,z}; // fallback
+}
+
 function placeItems() {
   const items = [];
   // 10 страниц
@@ -127,7 +145,7 @@ function updateMishkan(gs) {
   const dt = Math.min((now - m.lastUpdate)/1000, 0.05);
   m.lastUpdate = now;
 
-  // Изгнание крестом
+  // Изгнание крестом — мишкан СТОИТ НА МЕСТЕ
   if (m.banished) {
     m.banishTimer -= dt;
     if (m.banishTimer <= 0) {
@@ -152,8 +170,12 @@ function updateMishkan(gs) {
     return null;
   }
 
-  // Финальная фаза — ускорение
-  const escapeMult = gs.escapeActive ? 1.8 : 1.0;
+  // Финальная фаза — ускорение только если escapeRunning
+  // escapeRunning устанавливается сервером при получении escape_phase2 (на 25с трека)
+  const escapeMult = (gs.escapeActive && m.escapeRunning) ? 2.2 : 1.0;
+  
+  // Во время побега до escape_phase2 — мишкан стоит на месте
+  if(gs.escapeActive && !m.escapeRunning) return null;
 
   let closest=null, closestDist=Infinity;
   gs.players.forEach(p => {
@@ -170,7 +192,7 @@ function updateMishkan(gs) {
     m.state='chase';
     const dx=closest.x-m.x, dz=closest.z-m.z;
     const len=Math.sqrt(dx*dx+dz*dz);
-    const spd=m.speed*55*dt*(closestDist<8?1.6:1.2)*escapeMult;
+    const spd=m.speed*45*dt*(closestDist<8?1.3:1.0)*escapeMult; // ✅ сбалансировано
     const moved=tryMove(m, m.x+(dx/len)*spd, m.z+(dz/len)*spd, map);
     m.angle=Math.atan2(dx,dz);
 
@@ -222,9 +244,16 @@ function startGameLoop(code) {
     if(ev&&ev.event==='caught') bcast(code,{type:'player_caught',playerId:ev.playerId});
 
     // Проверка триггера финала
+    // Когда все страницы собраны — скрываем выход (испаряется для сбора)
+    if(!gs.exitHidden && gs.items.filter(i=>i.type==='page').every(p=>p.collected)){
+      gs.exitHidden=true;
+      // Мишкан тоже "испаряется" — grace period
+      gs.mishkan.gracePeriod=99999; // бесконечный пока не начнётся побег
+      bcast(code,{type:'exit_hidden'});
+    }
     if (!gs.escapeActive && gs.items.filter(i=>i.type==='page').every(p=>p.collected)) {
       const alive=gs.players.filter(p=>!p.caught);
-      const allInZone=alive.length>0&&alive.every(p=>Math.sqrt((p.x-GATHER_POS.x)**2+(p.z-GATHER_POS.z)**2)<4);
+      const allInZone=alive.length>0&&alive.every(p=>Math.sqrt((p.x-GATHER_POS.x)**2+(p.z-GATHER_POS.z)**2)<5);
       if (allInZone) {
         gs.escapeActive=true;
         gs.escapeStartTime=Date.now();
@@ -234,11 +263,13 @@ function startGameLoop(code) {
       }
     }
 
-    // Таймер побега
+    // Таймер побега — с 25с мишкан бежит, на 101с ловим всех
     if (gs.escapeActive && gs.escapeStartTime) {
       const elapsed=(Date.now()-gs.escapeStartTime)/1000;
-      if (elapsed>101.5) {
+      // 25с = мишкан начинает бежать (клиент отправляет escape_phase2)
+      if (elapsed>101) {
         gs.players.forEach(p=>{ if(!p.caught&&p.z>2) { p.caught=true; bcast(code,{type:'player_caught',playerId:p.id}); }});
+        gs.phase='ended_escape';
       }
     }
 
@@ -269,7 +300,31 @@ wss.on('connection',ws=>{
 
     if(msg.type==='create_lobby'){
       const code=generateCode();
-      const map=generateGridMap(), items=placeItems();
+      const map=generateGridMap();
+  // ✅ Проверяем позиции предметов — не в стенах
+  const itemDefs=[
+    {id:'page_0',type:'page',x:2.5,z:1.5},{id:'page_1',type:'page',x:33.5,z:1.5},
+    {id:'page_2',type:'page',x:1.5,z:8.5},{id:'page_3',type:'page',x:8.5,z:8.5},
+    {id:'page_4',type:'page',x:26.5,z:8.5},{id:'page_5',type:'page',x:33.5,z:8.5},
+    {id:'page_6',type:'page',x:1.5,z:20.5},{id:'page_7',type:'page',x:8.5,z:20.5},
+    {id:'page_8',type:'page',x:8.5,z:26.5},{id:'page_9',type:'page',x:14.5,z:28.5},
+    {id:'energo_0',type:'energo',x:11.5,z:3.5},{id:'energo_1',type:'energo',x:23.5,z:3.5},
+    {id:'energo_2',type:'energo',x:5.5,z:14.5},{id:'energo_3',type:'energo',x:29.5,z:14.5},
+    {id:'energo_4',type:'energo',x:17.5,z:20.5},
+  ];
+  const crossPool=[
+    {x:4.5,z:4.5},{x:16.5,z:4.5},{x:28.5,z:4.5},{x:4.5,z:10.5},{x:28.5,z:10.5},
+    {x:10.5,z:16.5},{x:24.5,z:16.5},{x:4.5,z:22.5},{x:28.5,z:22.5},
+  ];
+  const crossCount=5+Math.floor(Math.random()*3);
+  crossPool.sort(()=>Math.random()-0.5).slice(0,crossCount).forEach((c2,i)=>{
+    itemDefs.push({id:`cross_${i}`,type:'cross',x:c2.x,z:c2.z});
+  });
+  // Корректируем позиции которые в стенах
+  const items=itemDefs.map(item=>{
+    const free=findFreeNear(map,item.x,item.z);
+    return {...item,x:free.x,z:free.z,collected:false};
+  });
       lobbies[code]={players:[],gameState:{phase:'lobby',map,items,mishkan:createMishkan(),players:[],escapeActive:false}};
       playerCode=code; playerId='p1';
       const colors=['#ff6b6b','#4ecdc4','#ffe66d','#a8e6cf'];
@@ -333,6 +388,12 @@ wss.on('connection',ws=>{
         gs.mishkan.banished=true; gs.mishkan.banishTimer=30;
         bcast(playerCode,{type:'mishkan_banished',duration:30});
       }
+    }
+    else if(msg.type==='escape_phase2'){
+      // Мишкан начинает преследование (с 25 секунды трека)
+      if(!playerCode||!lobbies[playerCode]) return;
+      const gs=lobbies[playerCode].gameState;
+      if(gs.mishkan) gs.mishkan.escapeRunning=true;
     }
     else if(msg.type==='heal_player'){
       if(!playerCode||!lobbies[playerCode]) return;
