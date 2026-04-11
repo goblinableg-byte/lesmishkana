@@ -442,7 +442,7 @@ function hMsg(msg){
         if(p.id===myId&&G.myP){G.myP.x=p.x;G.myP.z=p.z;}
       });
       // Мишкан ПОЗАДИ игроков (юг z≈762), игроки бегут на север к z=0
-      G.M.x=32;G.M.z=762;
+      G.M.x=32;G.M.z=295;
       // Эмбиент ПРОДОЛЖАЕТ играть до runEsc
       document.getElementById('gi').style.display='none';
       runEsc();break;
@@ -715,7 +715,7 @@ function loop(ts){
 const PRE = {
   allPlayers: [],
   readySet: new Set(),
-  corrP: {x:32, z:55, camY:0}, // игрок в коридоре
+  corrP: {x:32, z:55, camY:0, camP:0}, // игрок в коридоре
   corrKeys:{u:false,d:false,l:false,r:false}, corrJX:0, corrJZ:0,
   corrArrived: false, corrAllArrived: false,
   corrMap: null, corrLId: null,
@@ -737,110 +737,218 @@ PAU.car1.volume = 0.9; PAU.car2.volume = 0.9; PAU.bang.volume = 1.0; PAU.door.vo
 PRE.bobikImg = new Image();
 PRE.bobikImg.src = 'https://image2url.com/r2/default/files/1775924038619-68e5dcea-f1ec-4fa3-9e3d-367710ca0e82.png';
 
-// ─── ФАЗА 1: КОМНАТА ───
+// ─── ФАЗА 1: КОМНАТА (raycast) ───
+// Карта комнаты: 12×10, стены=1, пол=0
+// TV висит на северной стене (z=1), игрок стартует у южной стены
+const ROOM_MAP=(()=>{
+  const R=12,C=10,m=[];
+  for(let z=0;z<C;z++)m.push(new Array(R).fill(0));
+  // внешние стены
+  for(let i=0;i<R;i++){m[0][i]=1;m[C-1][i]=1;}
+  for(let i=0;i<C;i++){m[i][0]=1;m[i][R-1]=1;}
+  // мебель: диван у южной стены
+  m[C-3][2]=1;m[C-3][3]=1;m[C-3][4]=1;
+  // тумба под тв
+  m[1][4]=1;m[1][5]=1;m[1][6]=1;m[1][7]=1;
+  return m;
+})();
+
+const RP={x:6,z:7,camY:0,camP:0};
+const RK={u:false,d:false,l:false,r:false};
+let RJX=0,RJZ=0,roomLId=null,roomCtrlOk=false;
+
 function showPhase1Room(){
   showScreen('screen-room');
-  const rc = document.getElementById('room-canvas');
-  rc.width = window.innerWidth; rc.height = window.innerHeight;
-  drawRoom(rc);
+  const rc=document.getElementById('room-canvas');
+  rc.width=window.innerWidth;rc.height=window.innerHeight;
   updateRoomReady();
+  setupRoomControls(rc);
+  if(roomLId)cancelAnimationFrame(roomLId);
+  let lastT=performance.now();
+  function roomLoop(ts){
+    roomLId=requestAnimationFrame(roomLoop);
+    const dt=Math.min((ts-lastT)/1000,.05);lastT=ts;
+    // movement
+    const spd=3.0*dt;
+    const fx=Math.sin(RP.camY),fz=Math.cos(RP.camY);
+    const rx=Math.cos(RP.camY),rz=-Math.sin(RP.camY);
+    let mx=0,mz=0;
+    if(RK.u){mx+=fx;mz+=fz;}if(RK.d){mx-=fx;mz-=fz;}
+    if(RK.l)RP.camY+=2.2*dt;if(RK.r)RP.camY-=2.2*dt;
+    if(Math.abs(RJX)>.06||Math.abs(RJZ)>.06){mx+=fx*(-RJZ)+rx*RJX;mz+=fz*(-RJZ)+rz*RJX;}
+    if(mx||mz){
+      const len=Math.sqrt(mx*mx+mz*mz),bp=0.25;
+      const nx=RP.x+(mx/len)*spd,nz=RP.z+(mz/len)*spd;
+      if(ROOM_MAP[Math.floor(RP.z)]&&ROOM_MAP[Math.floor(RP.z)][Math.floor(nx+(mx/len)*bp)]!==1)RP.x=nx;
+      if(ROOM_MAP[Math.floor(nz+(mz/len)*bp)]&&ROOM_MAP[Math.floor(nz+(mz/len)*bp)][Math.floor(RP.x)]!==1)RP.z=nz;
+    }
+    renderRoom(rc);
+  }
+  requestAnimationFrame(roomLoop);
 }
 
-function drawRoom(rc){
-  const ctx = rc.getContext('2d');
-  const W = rc.width, H = rc.height;
-  ctx.clearRect(0,0,W,H);
+function renderRoom(rc){
+  const ctx=rc.getContext('2d');
+  const W=rc.width,H=rc.height;
+  const px=RP.x,pz=RP.z,yaw=RP.camY,pitch=RP.camP;
+  const horizon=Math.floor(H/2+pitch*H*0.5);
+  const map=ROOM_MAP,SZ=map.length,SX=map[0].length;
 
-  // Пол
-  const fl = ctx.createLinearGradient(0,H*0.6,0,H);
-  fl.addColorStop(0,'#1a1208'); fl.addColorStop(1,'#0a0804');
-  ctx.fillStyle=fl; ctx.fillRect(0,H*0.6,W,H*0.4);
+  // Ceiling — тёплый дерево/штукатурка
+  ctx.fillStyle='#1c1208';ctx.fillRect(0,0,W,Math.max(0,horizon));
+  // Floor — деревянные доски
+  const fg=ctx.createLinearGradient(0,horizon,0,H);
+  fg.addColorStop(0,'#2a1a08');fg.addColorStop(1,'#140c04');
+  ctx.fillStyle=fg;ctx.fillRect(0,Math.max(0,horizon),W,H);
 
-  // Стены — перспектива
-  const wg = ctx.createLinearGradient(0,0,0,H*0.6);
-  wg.addColorStop(0,'#1e1408'); wg.addColorStop(1,'#2a1c0c');
-  ctx.fillStyle=wg; ctx.fillRect(0,0,W,H*0.6);
+  const fov=Math.PI/2.5,hf=fov/2;
+  const zB=new Float32Array(W);
+  // TV wall position (north, z=1): columns 4–7
+  const tvX1=4,tvX2=7;
 
-  // Боковые стены перспективы
-  ctx.fillStyle='#120e06';
-  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(W*0.18,H*0.6);ctx.lineTo(0,H*0.6);ctx.fill();
-  ctx.beginPath();ctx.moveTo(W,0);ctx.lineTo(W*0.82,H*0.6);ctx.lineTo(W,H*0.6);ctx.fill();
+  for(let col=0;col<W;col++){
+    const ra=yaw-hf+(col/W)*fov;
+    const rdx=Math.sin(ra),rdz=Math.cos(ra);
+    let mx=Math.floor(px),mz=Math.floor(pz);
+    const sx=rdx>0?1:-1,sz=rdz>0?1:-1;
+    const ddx=Math.abs(1/rdx),ddz=Math.abs(1/rdz);
+    let sdx=(rdx>0?(mx+1-px):(px-mx))*ddx,sdz=(rdz>0?(mz+1-pz):(pz-mz))*ddz;
+    let side=0,hit=false,hx=0,hz=0;
+    for(let i=0;i<80;i++){
+      if(sdx<sdz){sdx+=ddx;mx+=sx;side=0;}else{sdz+=ddz;mz+=sz;side=1;}
+      if(mz<0||mz>=SZ||mx<0||mx>=SX)break;
+      if(map[mz][mx]===1){hit=true;hx=mx;hz=mz;break;}
+    }
+    const dist=hit?Math.max(0.001,(side===0?(sdx-ddx):(sdz-ddz))*Math.cos(ra-yaw)):30;
+    zB[col]=dist;
 
-  // Потолок
-  ctx.fillStyle='#0d0a05';
-  ctx.fillRect(0,0,W,H*0.08);
+    // Determine wall colour — TV on north wall (z=1, x=4..7)
+    let u;
+    if(side===0){u=(pz+dist*Math.cos(ra))%1;if(u<0)u+=1;}
+    else{u=(px+dist*Math.sin(ra))%1;if(u<0)u+=1;}
 
-  // Телевизор на стене — центр сверху
-  const tvW = Math.min(W*0.5, 340), tvH = tvW*0.6;
-  const tvX = W/2 - tvW/2, tvY = H*0.1;
+    const isTVWall=(hz===1&&hx>=tvX1&&hx<=tvX2);
+    const isTV=isTVWall; // TV covers the whole tумба tile visually
+    const f=Math.max(0,1-dist/14);
+    let r,g,b;
+    if(isTV){
+      // TV screen texture: blue glow with scanlines
+      const scanline=Math.floor(u*20)%2===0;
+      const tvBr=scanline?f*0.9:f*0.7;
+      // News text area vs red banner
+      const vu=u; // horizontal position on TV
+      if(vu>0.05&&vu<0.95){
+        // glowing blue screen
+        r=Math.floor(20*tvBr);g=Math.floor(60*tvBr);b=Math.floor(160*tvBr);
+      } else {
+        r=Math.floor(30*f);g=Math.floor(20*f);b=Math.floor(10*f);
+      }
+    } else if(side===1){
+      // side walls — dark wood
+      r=Math.floor(52*f);g=Math.floor(32*f);b=Math.floor(12*f);
+    } else {
+      // north/south walls — warm plaster
+      r=Math.floor(66*f);g=Math.floor(44*f);b=Math.floor(18*f);
+    }
+    const wh=Math.min(H*4,Math.floor(H/dist)),wt=Math.floor(horizon-wh/2);
+    ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fillRect(col,wt,1,Math.max(1,wh));
+  }
 
-  // Рамка ТВ
-  ctx.fillStyle='#1a1a1a';
-  ctx.strokeStyle='#333'; ctx.lineWidth=4;
-  ctx.beginPath();ctx.roundRect(tvX-8,tvY-8,tvW+16,tvH+16,8);ctx.fill();ctx.stroke();
+  // TV HUD overlay: draw news text when looking at TV
+  // Project TV center to screen
+  const tvCX=5.5,tvCZ=1.3;
+  const tvDX=tvCX-px,tvDZ=tvCZ-pz;
+  const tvDist=Math.sqrt(tvDX*tvDX+tvDZ*tvDZ);
+  if(tvDist<8){
+    let tvAngle=Math.atan2(tvDX,tvDZ)-yaw;
+    while(tvAngle>Math.PI)tvAngle-=Math.PI*2;while(tvAngle<-Math.PI)tvAngle+=Math.PI*2;
+    if(Math.abs(tvAngle)<hf*0.8){
+      const scrX=Math.floor(W/2+(tvAngle/hf)*(W/2));
+      const tvScreenH=Math.min(H*2.5,Math.floor(H/tvDist*1.4));
+      const tvScreenW=Math.floor(tvScreenH*1.5);
+      const tx=scrX-tvScreenW/2,ty=horizon-tvScreenH*0.85;
+      ctx.save();
+      ctx.globalAlpha=Math.max(0,1-tvDist/7)*0.92;
+      // Screen bg
+      ctx.fillStyle='#08152a';ctx.fillRect(tx,ty,tvScreenW,tvScreenH);
+      // Red banner
+      ctx.fillStyle='#bb1100';ctx.fillRect(tx,ty+tvScreenH*0.74,tvScreenW,tvScreenH*0.14);
+      ctx.fillStyle='#fff';ctx.font=`bold ${Math.floor(tvScreenH*0.08)}px Arial`;ctx.textAlign='center';
+      ctx.fillText('СРОЧНО В ЭФИРЕ',scrX,ty+tvScreenH*0.83);
+      // Main text
+      ctx.fillStyle='#c8e4ff';ctx.font=`bold ${Math.floor(tvScreenH*0.09)}px Arial`;
+      ctx.fillText('В лесу пропал популярный',scrX,ty+tvScreenH*0.2);
+      ctx.fillText('блогер МИШКАН',scrX,ty+tvScreenH*0.32);
+      ctx.fillStyle='#aaccee';ctx.font=`${Math.floor(tvScreenH*0.075)}px Arial`;
+      ctx.fillText('просьба помочь как можно!',scrX,ty+tvScreenH*0.44);
+      ctx.fillStyle='#ff3030';ctx.font=`bold ${Math.floor(tvScreenH*0.075)}px Arial`;
+      ctx.fillText('НАГРАДА: 100,000€',scrX,ty+tvScreenH*0.60);
+      ctx.restore();
+    }
+  }
 
-  // Экран ТВ — синеватый свет
-  const sg = ctx.createRadialGradient(W/2,tvY+tvH/2,tvH*0.1,W/2,tvY+tvH/2,tvH*0.9);
-  sg.addColorStop(0,'#102030'); sg.addColorStop(0.7,'#060e18'); sg.addColorStop(1,'#020408');
-  ctx.fillStyle=sg;
-  ctx.beginPath();ctx.roundRect(tvX,tvY,tvW,tvH,4);ctx.fill();
+  // Vignette
+  const vg=ctx.createRadialGradient(W/2,H/2,H*.18,W/2,H/2,H*.78);
+  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.72)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
 
-  // Свечение ТВ на комнату
-  const glow = ctx.createRadialGradient(W/2,tvY+tvH/2,0,W/2,tvY+tvH/2,tvW*1.2);
-  glow.addColorStop(0,'rgba(20,80,180,0.12)');glow.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=glow; ctx.fillRect(0,0,W,H*0.7);
+  // TV glow ambient on ceiling/floor when close
+  if(tvDist<5){
+    const gl=ctx.createRadialGradient(W/2,horizon,0,W/2,horizon,W*0.4);
+    gl.addColorStop(0,`rgba(20,60,160,${0.12*(1-tvDist/5)})`);
+    gl.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=gl;ctx.fillRect(0,0,W,H);
+  }
+}
 
-  // Текст на ТВ — новость
-  ctx.save();
-  ctx.beginPath();ctx.roundRect(tvX,tvY,tvW,tvH,4);ctx.clip();
-
-  // Фон новости
-  ctx.fillStyle='#0a1828'; ctx.fillRect(tvX,tvY,tvW,tvH);
-
-  // Полоса BREAKING NEWS
-  ctx.fillStyle='#cc2200';
-  ctx.fillRect(tvX, tvY+tvH*0.72, tvW, tvH*0.14);
-  ctx.fillStyle='#fff';
-  ctx.font=`bold ${Math.floor(tvH*0.09)}px Arial`;
-  ctx.textAlign='center';
-  ctx.fillText('СРОЧНО В ЭФИРЕ', W/2, tvY+tvH*0.825);
-
-  // Основной текст новости
-  ctx.fillStyle='#c8e4ff';
-  const fs1 = Math.floor(tvH*0.095);
-  ctx.font=`bold ${fs1}px Arial`;
-  ctx.textAlign='center';
-  const line1='В лесу пропал популярный';
-  const line2='блогер МИШКАН';
-  const line3='просьба помочь как можно!';
-  ctx.fillText(line1, W/2, tvY+tvH*0.18);
-  ctx.fillText(line2, W/2, tvY+tvH*0.30);
-  ctx.fillStyle='#aaccee';
-  const fs2 = Math.floor(tvH*0.082);
-  ctx.font=`${fs2}px Arial`;
-  ctx.fillText(line3, W/2, tvY+tvH*0.43);
-
-  // НАГРАДА красным мелким
-  ctx.fillStyle='#ff3030';
-  ctx.font=`bold ${Math.floor(tvH*0.08)}px Arial`;
-  ctx.fillText('НАГРАДА: 100,000€', W/2, tvY+tvH*0.62);
-
-  ctx.restore();
-
-  // Ножка ТВ
-  ctx.fillStyle='#222';
-  ctx.fillRect(W/2-6, tvY+tvH+8, 12, 18);
-  ctx.fillRect(W/2-22, tvY+tvH+24, 44, 6);
-
-  // Слабый свет на полу от ТВ
-  const floorG = ctx.createRadialGradient(W/2,H*0.61,0,W/2,H*0.61,W*0.3);
-  floorG.addColorStop(0,'rgba(20,60,140,0.15)');floorG.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=floorG; ctx.fillRect(0,H*0.55,W,H*0.25);
-
-  // Виньетка
-  const vig = ctx.createRadialGradient(W/2,H/2,H*0.2,W/2,H/2,H*0.85);
-  vig.addColorStop(0,'rgba(0,0,0,0)');vig.addColorStop(1,'rgba(0,0,0,0.82)');
-  ctx.fillStyle=vig; ctx.fillRect(0,0,W,H);
+function setupRoomControls(rc){
+  if(roomCtrlOk)return;roomCtrlOk=true;
+  // joystick (reuse jz2/jk2 elements if present — but room uses its own)
+  // Touch camera on room-canvas
+  const camPtrs=new Map();
+  rc.addEventListener('pointerdown',e=>{
+    if(document.elementFromPoint(e.clientX,e.clientY)?.closest('#room-ui'))return;
+    rc.setPointerCapture(e.pointerId);
+    camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  },{passive:true});
+  rc.addEventListener('pointermove',e=>{
+    if(!camPtrs.has(e.pointerId))return;
+    const prev=camPtrs.get(e.pointerId);
+    RP.camY+=(e.clientX-prev.x)*0.008;
+    RP.camP=Math.max(-.5,Math.min(.5,RP.camP-(e.clientY-prev.y)*0.004));
+    camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  },{passive:true});
+  rc.addEventListener('pointerup',e=>camPtrs.delete(e.pointerId),{passive:true});
+  rc.addEventListener('pointercancel',e=>camPtrs.delete(e.pointerId),{passive:true});
+  // Keyboard — shared with corridor but that's fine since only one active at a time
+  window.addEventListener('keydown',e=>{
+    if(e.key==='ArrowUp'||e.key==='w')RK.u=true;
+    if(e.key==='ArrowDown'||e.key==='s')RK.d=true;
+    if(e.key==='ArrowLeft'||e.key==='a')RK.l=true;
+    if(e.key==='ArrowRight'||e.key==='d')RK.r=true;
+    if(e.key==='PageUp')RP.camP=Math.min(.5,RP.camP+.06);
+    if(e.key==='PageDown')RP.camP=Math.max(-.5,RP.camP-.06);
+  });
+  window.addEventListener('keyup',e=>{
+    if(e.key==='ArrowUp'||e.key==='w')RK.u=false;
+    if(e.key==='ArrowDown'||e.key==='s')RK.d=false;
+    if(e.key==='ArrowLeft'||e.key==='a')RK.l=false;
+    if(e.key==='ArrowRight'||e.key==='d')RK.r=false;
+  });
+  // Add a virtual joystick for mobile in room-ui area
+  const jzR=document.createElement('div');
+  jzR.id='jzR';
+  jzR.style.cssText='position:fixed;bottom:220px;left:14px;width:160px;height:160px;touch-action:none;pointer-events:all;z-index:30;';
+  jzR.innerHTML='<div style="position:absolute;inset:0;border-radius:50%;background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.22);"></div><div id="jkR" style="position:absolute;width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.28);border:2px solid rgba(255,255,255,.45);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;"></div>';
+  document.getElementById('screen-room').appendChild(jzR);
+  const knR=document.getElementById('jkR'),KR2=50;
+  let jPtr2=null;
+  function uJR(e){const r=jzR.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy;const len=Math.sqrt(dx*dx+dy*dy),cl=Math.min(len,KR2);if(len>0){dx=dx/len*cl;dy=dy/len*cl;}knR.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;RJX=dx/KR2;RJZ=dy/KR2;}
+  function jRR(e){if(e.pointerId===jPtr2){jPtr2=null;RJX=0;RJZ=0;knR.style.transform='translate(-50%,-50%)';}}
+  jzR.addEventListener('pointerdown',e=>{e.preventDefault();jPtr2=e.pointerId;jzR.setPointerCapture(e.pointerId);uJR(e);},{passive:false});
+  jzR.addEventListener('pointermove',e=>{if(e.pointerId!==jPtr2)return;e.preventDefault();uJR(e);},{passive:false});
+  jzR.addEventListener('pointerup',jRR,{passive:false});
+  jzR.addEventListener('pointercancel',jRR,{passive:false});
 }
 
 function updateRoomReady(){
@@ -886,6 +994,7 @@ function checkAllReady(){
 
 // ─── КАТСЦЕНА: МАШИНА ───
 function runCarCutscene(){
+  if(roomLId){cancelAnimationFrame(roomLId);roomLId=null;}
   showScreen('screen-car');
   const cv = document.getElementById('car-canvas');
   cv.width = window.innerWidth; cv.height = window.innerHeight;
@@ -1095,7 +1204,7 @@ function buildCorrMap(){
 
 function startCorridorPhase(){
   PRE.corrMap = buildCorrMap();
-  PRE.corrP = {x:10, z:75, camY:0};
+  PRE.corrP = {x:10, z:75, camY:0, camP:0};
   PRE.corrArrived = false;
   PRE.corrAllArrived = false;
 
@@ -1152,8 +1261,8 @@ function startCorridorPhase(){
 function renderCorridor(cv,player,map){
   const ctx=cv.getContext('2d');
   const W=cv.width,H=cv.height;
-  const px=player.x,pz=player.z,yaw=player.camY;
-  const horizon=Math.floor(H/2);
+  const px=player.x,pz=player.z,yaw=player.camY,pitch=player.camP||0;
+  const horizon=Math.floor(H/2+pitch*H*0.5);
   const SZ=map.length,SX=map[0].length;
   // Sky
   ctx.fillStyle='#010501';ctx.fillRect(0,0,W,horizon);
@@ -1234,11 +1343,11 @@ function setupCorridorControls(){
   const cc=document.getElementById('corr-canvas');
   const camPtrs=new Map();
   cc.addEventListener('pointerdown',e=>{const el=document.elementFromPoint(e.clientX,e.clientY);if(el&&el.closest('#ctrl2'))return;cc.setPointerCapture(e.pointerId);camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:true});
-  cc.addEventListener('pointermove',e=>{if(!camPtrs.has(e.pointerId))return;const prev=camPtrs.get(e.pointerId);PRE.corrP.camY+=(e.clientX-prev.x)*0.008;camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:true});
+  cc.addEventListener('pointermove',e=>{if(!camPtrs.has(e.pointerId))return;const prev=camPtrs.get(e.pointerId);PRE.corrP.camY+=(e.clientX-prev.x)*0.008;PRE.corrP.camP=Math.max(-.5,Math.min(.5,(PRE.corrP.camP||0)-(e.clientY-prev.y)*0.004));camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:true});
   cc.addEventListener('pointerup',e=>{camPtrs.delete(e.pointerId);},{passive:true});
   cc.addEventListener('pointercancel',e=>{camPtrs.delete(e.pointerId);},{passive:true});
   // Keys
-  window.addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='w')PRE.corrKeys.u=true;if(e.key==='ArrowDown'||e.key==='s')PRE.corrKeys.d=true;if(e.key==='ArrowLeft'||e.key==='a')PRE.corrKeys.l=true;if(e.key==='ArrowRight'||e.key==='d')PRE.corrKeys.r=true;});
+  window.addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='w')PRE.corrKeys.u=true;if(e.key==='ArrowDown'||e.key==='s')PRE.corrKeys.d=true;if(e.key==='ArrowLeft'||e.key==='a')PRE.corrKeys.l=true;if(e.key==='ArrowRight'||e.key==='d')PRE.corrKeys.r=true;if(e.key==='PageUp')PRE.corrP.camP=Math.min(.5,(PRE.corrP.camP||0)+.06);if(e.key==='PageDown')PRE.corrP.camP=Math.max(-.5,(PRE.corrP.camP||0)-.06);});
   window.addEventListener('keyup',e=>{if(e.key==='ArrowUp'||e.key==='w')PRE.corrKeys.u=false;if(e.key==='ArrowDown'||e.key==='s')PRE.corrKeys.d=false;if(e.key==='ArrowLeft'||e.key==='a')PRE.corrKeys.l=false;if(e.key==='ArrowRight'||e.key==='d')PRE.corrKeys.r=false;});
 }
 
