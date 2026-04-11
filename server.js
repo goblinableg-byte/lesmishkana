@@ -123,6 +123,7 @@ function startLoop(code){
   lb.interval=setInterval(()=>{
     if(!lobbies[code]){clearInterval(lb.interval);return;}
     const gs=lb.gameState;if(!gs||gs.phase!=='playing')return;
+    if(!gs.prePhaseDone)return; // ждём пока клиенты пройдут фазы
     const ev=tickMishkan(gs);
     if(ev?.event==='caught')bcast(code,{type:'player_caught',playerId:ev.id});
     // Все страницы собраны → скрыть выход+мишкана
@@ -172,7 +173,7 @@ function startLoop(code){
       const pages=gs.items.filter(i=>i.type==='page');const alive=gs.players.filter(p=>!p.caught);
       if(pages.every(p=>p.collected)&&alive.length>0&&alive.every(p=>p.z<2)&&!gs.escapeActive){gs.phase='won';bcast(code,{type:'game_won'});}
     }
-    if(gs.players.length>0&&gs.players.every(p=>p.caught)&&gs.phase==='playing'){gs.phase='lost';bcast(code,{type:'game_lost'});}
+    if(gs.prePhaseDone&&gs.players.length>0&&gs.players.every(p=>p.caught)&&gs.phase==='playing'){gs.phase='lost';bcast(code,{type:'game_lost'});}
   },50);
 }
 
@@ -218,6 +219,12 @@ wss.on('connection',ws=>{
       lb.gameState.phase='playing';
       bcast(pCode,{type:'game_start',map:lb.gameState.map,items:lb.gameState.items,players:lb.gameState.players.map(p=>({id:p.id,name:p.name,x:p.x,z:p.z,color:p.color}))});
       startLoop(pCode);
+    }
+    else if(msg.type==='game_ready'){
+      // Клиент прошёл все фазы — активируем мишкана
+      if(!pCode||!lobbies[pCode])return;
+      const gs=lobbies[pCode].gameState;
+      if(gs)gs.prePhaseDone=true;
     }
     else if(msg.type==='player_move'){
       if(!pCode||!lobbies[pCode])return;
