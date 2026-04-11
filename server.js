@@ -32,7 +32,7 @@ function genMap(){
 
 // ═══ КОРИДОР ПОБЕГА — ДЛИННЫЙ 768 ═══
 function genCorridorMap(){
-  const W=64,H=768,map=[];
+  const W=64,H=300,map=[];
   for(let z=0;z<H;z++)map.push(new Array(W).fill(1));
   // Коридор шириной 12 по центру
   const cx=Math.floor(W/2);
@@ -143,9 +143,9 @@ function startLoop(code){
         gs.corridorMap=true;
         // Игроки в южном конце (z≈245), бегут на север к z=0
         const cx=32;
-        gs.players.forEach((p,i)=>{p.x=cx-2+i%3;p.z=755-Math.floor(i/3)*2;});
+        gs.players.forEach((p,i)=>{p.x=cx-2+i%3;p.z=288-Math.floor(i/3)*2;});
         // Мишкан позади всех (z=762), стоит пока не escapeRunning
-        gs.mishkan.x=cx+0.5;gs.mishkan.z=762;gs.mishkan.escapeRunning=false;gs.mishkan.gracePeriod=0;
+        gs.mishkan.x=cx+0.5;gs.mishkan.z=295;gs.mishkan.escapeRunning=false;gs.mishkan.gracePeriod=0;
         bcast(code,{type:'escape_start',map:gs.map,players:gs.players.map(p=>({id:p.id,x:p.x,z:p.z}))});
       }
     }
