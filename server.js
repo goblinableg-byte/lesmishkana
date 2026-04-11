@@ -202,6 +202,15 @@ wss.on('connection',ws=>{
       sendTo(ws,{type:'joined_lobby',code,playerId:pId,isHost:false,players:lobbies[code].players.map(p=>({id:p.id,name:p.name,color:p.color}))});
       bcast(code,{type:'lobby_update',players:lobbies[code].players.map(p=>({id:p.id,name:p.name,color:p.color}))});
     }
+    else if(msg.type==='player_ready'){
+      // Pre-game ready system
+      if(!pCode||!lobbies[pCode])return;
+      const lb=lobbies[pCode];
+      if(!lb.readySet)lb.readySet=new Set();
+      lb.readySet.add(pId);
+      // Broadcast ready list to all
+      bcast(pCode,{type:'player_ready_ack',readyIds:[...lb.readySet]});
+    }
     else if(msg.type==='start_game'){
       if(!pCode||!lobbies[pCode])return;
       const lb=lobbies[pCode],host=lb.players.find(p=>p.id===pId);
