@@ -30,15 +30,15 @@ function genMap(){
   return map;
 }
 
-// ═══ КОРИДОР ПОБЕГА 128 длина ═══
+// ═══ КОРИДОР ПОБЕГА — ДЛИННЫЙ 768 ═══
 function genCorridorMap(){
-  const W=64,H=128,map=[];
+  const W=64,H=768,map=[];
   for(let z=0;z<H;z++)map.push(new Array(W).fill(1));
-  // Коридор шириной 10 по центру
+  // Коридор шириной 12 по центру
   const cx=Math.floor(W/2);
-  for(let z=0;z<H;z++)for(let x=cx-5;x<=cx+5;x++)map[z][x]=0;
-  // Выход на севере
-  for(let x=cx-5;x<=cx+5;x++){map[0][x]=0;map[1][x]=0;}
+  for(let z=0;z<H;z++)for(let x=cx-6;x<=cx+6;x++)map[z][x]=0;
+  // Выход на севере открыт
+  for(let x=cx-6;x<=cx+6;x++){map[0][x]=0;map[1][x]=0;}
   return map;
 }
 
@@ -100,7 +100,7 @@ function tickMishkan(gs){
   const m=gs.mishkan,map=gs.map;
   const now=Date.now(),dt=Math.min((now-m.lastUpdate)/1000,0.05);
   m.lastUpdate=now;
-  if(m.banished){m.banishTimer-=dt;if(m.banishTimer<=0){m.banished=false;m.x=MISHKAN_SPAWN.x;m.z=MISHKAN_SPAWN.z;m.gracePeriod=5000;}return null;}
+  if(m.banished){m.banishTimer-=dt;if(m.banishTimer<=0){m.banished=false;m.x=MISHKAN_SPAWN.x;m.z=MISHKAN_SPAWN.z;m.gracePeriod=gs.allPagesCollected?999999:5000;}return null;}
   if(m.gracePeriod>0){m.gracePeriod-=dt*1000;moveTo(m,m.patrolTarget.x,m.patrolTarget.z,m.speed*45*dt*0.4,map);if(Math.sqrt((m.patrolTarget.x-m.x)**2+(m.patrolTarget.z-m.z)**2)<1)m.patrolTarget={x:25+Math.random()*8,z:25+Math.random()*8};return null;}
   // escape phase — стоим пока не escapeRunning
   if(gs.escapeActive&&!m.escapeRunning)return null;
@@ -108,7 +108,7 @@ function tickMishkan(gs){
   gs.players.forEach(p=>{if(p.caught)return;const d=Math.sqrt((p.x-m.x)**2+(p.z-m.z)**2);if(d<cd){cd=d;closest=p;}});
   if(!closest){moveTo(m,m.patrolTarget.x,m.patrolTarget.z,m.speed*45*dt*0.7,map);if(Math.sqrt((m.patrolTarget.x-m.x)**2+(m.patrolTarget.z-m.z)**2)<1){let nx,nz,a=0;do{nx=2+Math.floor(Math.random()*30);nz=2+Math.floor(Math.random()*30);a++;}while(map[nz]&&map[nz][nx]===1&&a<60);m.patrolTarget={x:nx+0.5,z:nz+0.5};}return null;}
   if(cd<0.8&&!closest.caught){closest.caught=true;return{event:'caught',id:closest.id};}
-  const eMult=m.escapeRunning?1.6:1.0;
+  const eMult=m.escapeRunning?7.0:1.0;
   moveTo(m,closest.x,closest.z,m.speed*45*dt*(cd<8?1.2:1.0)*eMult,map);
   // антизастревание
   m.stuckT+=dt;if(m.stuckT>1.5){const md=Math.sqrt((m.x-m.stuckX)**2+(m.z-m.stuckZ)**2);m.stuckT=0;m.stuckX=m.x;m.stuckZ=m.z;if(md<0.1){const tx=m.x+(closest.x-m.x)*0.3,tz=m.z+(closest.z-m.z)*0.3;if(map[Math.floor(tz)]&&map[Math.floor(tz)][Math.floor(tx)]!==1){m.x=tx;m.z=tz;}}}
@@ -140,11 +140,11 @@ function startLoop(code){
         // Пересобираем карту в коридор 64x64
         gs.map=genCorridorMap();
         gs.corridorMap=true;
-        // Игроки в южном конце длинного коридора (z=120), бегут на север к z=0
+        // Игроки в южном конце (z≈245), бегут на север к z=0
         const cx=32;
-        gs.players.forEach((p,i)=>{p.x=cx-2+i%3;p.z=118-Math.floor(i/3)*2;});
-        // Мишкан позади всех (z=124), стоит пока не escapeRunning
-        gs.mishkan.x=cx+0.5;gs.mishkan.z=124;gs.mishkan.escapeRunning=false;gs.mishkan.gracePeriod=0;
+        gs.players.forEach((p,i)=>{p.x=cx-2+i%3;p.z=755-Math.floor(i/3)*2;});
+        // Мишкан позади всех (z=762), стоит пока не escapeRunning
+        gs.mishkan.x=cx+0.5;gs.mishkan.z=762;gs.mishkan.escapeRunning=false;gs.mishkan.gracePeriod=0;
         bcast(code,{type:'escape_start',map:gs.map,players:gs.players.map(p=>({id:p.id,x:p.x,z:p.z}))});
       }
     }
@@ -236,6 +236,7 @@ wss.on('connection',ws=>{
     else if(msg.type==='use_cross'){
       if(!pCode||!lobbies[pCode])return;
       const gs=lobbies[pCode].gameState;
+      if(gs.escapeActive)return; // нельзя изгнать во время побега
       const d=Math.sqrt((gs.players.find(p=>p.id===pId)?.x-gs.mishkan.x)**2||0+(gs.players.find(p=>p.id===pId)?.z-gs.mishkan.z)**2||0);
       if(!gs.mishkan.banished){gs.mishkan.banished=true;gs.mishkan.banishTimer=30;bcast(pCode,{type:'mishkan_banished',duration:30});}
     }
