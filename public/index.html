@@ -348,11 +348,11 @@ function rMM(){
   for(let z=0;z<SZ;z++)for(let x=0;x<SX;x++)if(G.map[z][x]===1){ctx.fillStyle='#1a3a10';ctx.fillRect(x*CX,z*CZ,CX-.2,CZ-.2);}
   if(!G.exitH||G.escA){ctx.fillStyle='rgba(0,220,60,.75)';if(G.escA){ctx.fillRect((SX/2-5)*CX,0,10*CX,CZ*.7);}else ctx.fillRect(14*CX,0,6*CX,CZ*.7);}
   if(G.exitH&&!G.escA){const g=(Math.sin(Date.now()*.005)+1)*.5;ctx.globalAlpha=0.3+g*.4;ctx.fillStyle='#ffc800';ctx.beginPath();ctx.arc(GATHER.x*CX,GATHER.z*CZ,3.5*CX,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
-  G.items.forEach(i=>{if(i.type!=='page')return;const g=(Math.sin(Date.now()*.004+i.x)+1)*.5;ctx.globalAlpha=i.collected?.25:0.7+g*.3;ctx.fillStyle=i.collected?'#5a4010':'#f0c030';const s=i.collected?CX*.28:CX*.4;ctx.fillRect(i.x*CX-s/2,i.z*CZ-s/2,s,s);ctx.globalAlpha=1;});
-  G.items.forEach(i=>{if(i.type!=='energo'||i.collected)return;const g=(Math.sin(Date.now()*.006+i.z)+1)*.5;ctx.globalAlpha=0.65+g*.35;ctx.fillStyle=`rgb(0,${Math.floor(180+g*75)},140)`;const s=CX*.38;ctx.fillRect(i.x*CX-s/2,i.z*CZ-s/2,s,s);ctx.globalAlpha=1;});
-  G.items.forEach(i=>{if(i.type!=='cross'||i.collected)return;const g=(Math.sin(Date.now()*.005+i.x)+1)*.5;ctx.globalAlpha=0.7+g*.3;ctx.fillStyle=`rgb(80,${Math.floor(80+g*60)},255)`;const s=CX*.45;ctx.fillRect(i.x*CX-s/4,i.z*CZ-s/2,s/2,s);ctx.fillRect(i.x*CX-s/2,i.z*CZ-s/4,s,s/2);ctx.globalAlpha=1;});
+  G.items.forEach(i=>{if(i.type!=='page'||G.escA)return;const g=(Math.sin(Date.now()*.004+i.x)+1)*.5;ctx.globalAlpha=i.collected?.25:0.7+g*.3;ctx.fillStyle=i.collected?'#5a4010':'#f0c030';const s=i.collected?CX*.28:CX*.4;ctx.fillRect(i.x*CX-s/2,i.z*CZ-s/2,s,s);ctx.globalAlpha=1;});
+  G.items.forEach(i=>{if(i.type!=='energo'||i.collected||G.escA)return;const g=(Math.sin(Date.now()*.006+i.z)+1)*.5;ctx.globalAlpha=0.65+g*.35;ctx.fillStyle=`rgb(0,${Math.floor(180+g*75)},140)`;const s=CX*.38;ctx.fillRect(i.x*CX-s/2,i.z*CZ-s/2,s,s);ctx.globalAlpha=1;});
+  G.items.forEach(i=>{if(i.type!=='cross'||i.collected||G.escA)return;const g=(Math.sin(Date.now()*.005+i.x)+1)*.5;ctx.globalAlpha=0.7+g*.3;ctx.fillStyle=`rgb(80,${Math.floor(80+g*60)},255)`;const s=CX*.45;ctx.fillRect(i.x*CX-s/4,i.z*CZ-s/2,s/2,s);ctx.fillRect(i.x*CX-s/2,i.z*CZ-s/4,s,s/2);ctx.globalAlpha=1;});
   Object.values(G.players).forEach(p=>{if(p.id===myId)return;ctx.globalAlpha=.88;ctx.fillStyle=p.caught?'#880000':p.color;ctx.beginPath();ctx.arc(p.x*CX,p.z*CZ,CX*.55,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
-  if(!G.M.banished&&!G.exitH){ctx.fillStyle='rgba(255,60,0,.85)';ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(G.M.x*CX,G.M.z*CZ,CX*.7,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+  if(!G.M.banished&&!G.exitH&&!G.escA){ctx.fillStyle='rgba(255,60,0,.85)';ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(G.M.x*CX,G.M.z*CZ,CX*.7,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
   const mx=G.myP.x*CX,mz=G.myP.z*CZ;ctx.fillStyle='#fff';ctx.globalAlpha=.95;ctx.beginPath();ctx.arc(mx,mz,CX*.65,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(mx,mz);ctx.lineTo(mx+Math.sin(G.camY)*CX*2.2,mz+Math.cos(G.camY)*CZ*2.2);ctx.stroke();ctx.globalAlpha=1;ctx.strokeStyle='#1a3a12';ctx.lineWidth=1;ctx.strokeRect(0,0,MM,MM);
 }
 
@@ -391,8 +391,8 @@ function hMsg(msg){
         if(G.players[p.id]){G.players[p.id].x=p.x;G.players[p.id].z=p.z;}
         if(p.id===myId&&G.myP){G.myP.x=p.x;G.myP.z=p.z;}
       });
-      // Мишкан ПОЗАДИ игроков (юг z≈252), игроки бегут на север к z=0
-      G.M.x=32;G.M.z=252;
+      // Мишкан ПОЗАДИ игроков (юг z≈762), игроки бегут на север к z=0
+      G.M.x=32;G.M.z=762;
       // Эмбиент ПРОДОЛЖАЕТ играть до runEsc
       document.getElementById('gi').style.display='none';
       runEsc();break;
@@ -450,7 +450,7 @@ function runEsc(){
   G.dis=true;G.mRise=-1.8;
   // Ambient CONTINUES during cutscene - only pause when escape music starts
   const esc=AU.escape;esc.currentTime=0;esc.volume=0.9;
-  showBobik('МИШКАН ЗДЕСЬ');
+  showBobik('МИШКАН ВОССТАЁТ...');
   // Camera turns to SOUTH (Math.PI) to face mishkan behind players at z=62
   const sy=G.camY;
   const tgt=Math.PI; // смотрим на юг — там мишкан
@@ -524,7 +524,7 @@ function useCross(){
 }
 
 // ══ BOBIK ══
-let bobTO=null;const BM=['тихо, этот долбоеб рядом','Мишкан не злой, он пиздец какой злой','Страницы видны на карте!','бахните энергоса, бегать быстро будете','Кресты — синие на карте!'];
+let bobTO=null;const BM=['Тихо... я его чувствую.','Мишкан не злой. Просто одинокий.','Страницы видны на карте!','Энергос помогает убежать!','Кресты — синие на карте!'];
 function showBobik(m){const el=document.getElementById('bm');el.textContent=m;el.classList.add('show');clearTimeout(bobTO);bobTO=setTimeout(()=>el.classList.remove('show'),4500);}
 
 // ══ CONTROLS ══
@@ -612,7 +612,7 @@ function loop(ts){
   else{FOV=Math.PI/2.5;}
 
   if(!G.caught&&!G.dis&&!G.stun){
-    const eB=G.escP2?1.1:1.0;
+    const eB=G.escP2?3.5:1.0;
     const spd=(G.adr?1.3:1.0)*(G.sprint&&G.stamina>0?1.35:1.0)*2.8*dt*eB;
     const fx=Math.sin(G.camY),fz=Math.cos(G.camY),rx=Math.cos(G.camY),rz=-Math.sin(G.camY);
     let mx=0,mz=0;
