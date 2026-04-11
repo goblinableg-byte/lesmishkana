@@ -290,7 +290,7 @@ function startGame(){send({type:'start_game'});}
 function uLobby(pl){const el=document.getElementById('lobby-players');el.innerHTML='';pl.forEach(p=>{const d=document.createElement('div');d.className='lp';d.innerHTML=`<div class="pdot" style="background:${p.color}"></div><span>${p.name}</span>`;el.appendChild(d);});}
 
 // ══ STATE ══
-const G={map:null,MS:36,items:[],players:{},M:{x:30,z:30,angle:0,banished:false},myP:null,caught:false,stamina:100,sprint:false,adr:false,adrT:0,keys:{u:false,d:false,l:false,r:false},jX:0,jZ:0,interact:false,pages:0,allP:false,exitH:false,camY:Math.PI,camP:0,bT:0,bAmt:0,sT:0,sX:0,sY:0,dis:false,escA:false,escP2:false,fO:[],stun:false,stunT:0,hasCr:false,crU:false,crA:0,mBan:false,mBanT:0,mRise:0,monIv:null,fallIv:null};
+const G={map:null,MS:36,items:[],players:{},M:{x:30,z:30,angle:0,banished:false},myP:null,caught:false,stamina:100,sprint:false,adr:false,adrT:0,keys:{u:false,d:false,l:false,r:false},jX:0,jZ:0,interact:false,pages:0,allP:false,exitH:false,camY:Math.PI,camP:0,bT:0,bAmt:0,sT:0,sX:0,sY:0,dis:false,escA:false,escP2:false,fO:[],stun:false,stunT:0,hasCr:false,crU:false,crA:0,mBan:false,mBanT:0,mRise:0,monIv:null,fallIv:null,gameReady:false};
 const GATHER={x:17.5,z:32},EXIT_N={x:32,z:1.5},MS={x:30,z:30};
 
 // ══ RAYCASTER ══
@@ -422,6 +422,7 @@ function hMsg(msg){
       PRE.allPlayers=Object.values(G.players);
       showPhase1Room();break;
     case 'game_state':
+      if(!G.gameReady)break; // Игнорируем game_state во время фаз
       G.M=msg.mishkan;
       msg.players.forEach(p=>{if(!G.players[p.id])return;if(p.id===myId){G.players[p.id].caught=p.caught;G.players[p.id].hp=p.hp;}else Object.assign(G.players[p.id],p);});
       G.items=msg.items;G.allP=msg.allPagesCollected||false;
@@ -446,6 +447,7 @@ function hMsg(msg){
       document.getElementById('gi').style.display='none';
       runEsc();break;
     case 'player_caught':
+      if(!G.gameReady)break; // Игнорируем во время фаз
       if(msg.playerId===myId){G.caught=true;tCaught();}
       else{pAU('caught');showBobik(`${G.players[msg.playerId]?.name||'Игрок'} пойман!`);}
       if(G.players[msg.playerId])G.players[msg.playerId].caught=true;uHUD();break;
@@ -463,8 +465,8 @@ function hMsg(msg){
       if(msg.readyIds)msg.readyIds.forEach(id=>{ if(id!==myId)markPlayerReady(id); });
       break;
     case 'mishkan_banished':G.mBan=true;G.mBanT=msg.duration;showBobik('Мишкан изгнан на 30 сек!');break;
-    case 'game_won':endGame(true);break;
-    case 'game_lost':endGame(false);break;
+    case 'game_won':if(G.gameReady)endGame(true);break;
+    case 'game_lost':if(G.gameReady)endGame(false);break;
   }
 }
 
@@ -640,7 +642,7 @@ function iCtrl(){
 // ══ LOOP ══
 let lSend=0,bobT=30,lId=null,lTS=performance.now();
 
-function startGC(){
+function startGC(){G.gameReady=true;send({type:'game_ready'});Object.values(PAU).forEach(a=>{try{a.pause();a.currentTime=0;}catch(e){}});
   if(!document.fullscreenElement&&/Android|iPhone/i.test(navigator.userAgent))document.documentElement.requestFullscreen().catch(()=>{});
   showScreen('screen-game');
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
