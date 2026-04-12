@@ -12,32 +12,79 @@ const wss=new WebSocket.Server({server});
 const lobbies={};
 function genCode(){return Math.random().toString(36).substring(2,6).toUpperCase();}
 
-// ═══ КАРТА 36x36 (сетка страха) ═══
+// ═══ КАРТА 64x64 — КОМНАТЫ ═══
 function genMap(){
-  const S=36,map=[];
-  for(let z=0;z<S;z++)map.push(new Array(S).fill(0));
-  for(let i=0;i<S;i++){map[0][i]=1;map[S-1][i]=1;map[i][0]=1;map[i][S-1]=1;}
-  for(let z=2;z<S-2;z+=6)for(let x=2;x<S-2;x+=6){
-    if(z>=12&&z<=22&&x>=12&&x<=22)continue;
-    if(z>=26&&x>=22)continue; // зона мишкана — свободна
-    for(let bz=0;bz<4;bz++)for(let bx=0;bx<4;bx++)
-      if(z+bz<S-1&&x+bx<S-1)map[z+bz][x+bx]=1;
+  const S=64,map=[];
+  for(let z=0;z<S;z++)map.push(new Array(S).fill(1));
+
+  function carveRoom(x1,z1,x2,z2){
+    for(let z=z1;z<=z2;z++)for(let x=x1;x<=x2;x++)map[z][x]=0;
   }
-  // Выход север
-  for(let x=14;x<=20;x++){map[0][x]=0;map[1][x]=0;}
-  // Зона сбора юг — свободна
-  for(let z=29;z<=S-2;z++)for(let x=13;x<=22;x++)map[z][x]=0;
+  function carveCorridor(x1,z1,x2,z2){
+    if(Math.random()<0.5){for(let x=Math.min(x1,x2);x<=Math.max(x1,x2);x++)map[z1][x]=0;for(let z=Math.min(z1,z2);z<=Math.max(z1,z2);z++)map[z][x2]=0;}
+    else{for(let z=Math.min(z1,z2);z<=Math.max(z1,z2);z++)map[z][x1]=0;for(let x=Math.min(x1,x2);x<=Math.max(x1,x2);x++)map[z2][x]=0;}
+  }
+
+  // 13 комнат разного размера, расположены по сетке
+  const rooms=[
+    {x1:2,  z1:2,  x2:12, z2:10},  // 0: стартовая
+    {x1:14, z1:2,  x2:24, z2:8},   // 1
+    {x1:27, z1:2,  x2:38, z2:10},  // 2
+    {x1:41, z1:2,  x2:52, z2:9},   // 3
+    {x1:55, z1:2,  x2:62, z2:12},  // 4
+    {x1:2,  z1:13, x2:11, z2:23},  // 5
+    {x1:14, z1:11, x2:26, z2:22},  // 6: центральный зал
+    {x1:29, z1:13, x2:40, z2:23},  // 7
+    {x1:43, z1:11, x2:62, z2:24},  // 8: большая комната
+    {x1:2,  z1:26, x2:14, z2:38},  // 9
+    {x1:17, z1:25, x2:32, z2:37},  // 10: зона сбора
+    {x1:35, z1:26, x2:50, z2:38},  // 11
+    {x1:52, z1:27, x2:62, z2:40},  // 12
+    {x1:4,  z1:42, x2:16, z2:52},  // 13
+    {x1:20, z1:41, x2:44, z2:55},  // 14: большой южный зал
+  ];
+  rooms.forEach(r=>carveRoom(r.x1,r.z1,r.x2,r.z2));
+
+  // Коридоры между комнатами
+  const cx=(r)=>Math.floor((r.x1+r.x2)/2),cz=(r)=>Math.floor((r.z1+r.z2)/2);
+  carveCorridor(cx(rooms[0]),cz(rooms[0]),cx(rooms[1]),cz(rooms[1]));
+  carveCorridor(cx(rooms[1]),cz(rooms[1]),cx(rooms[2]),cz(rooms[2]));
+  carveCorridor(cx(rooms[2]),cz(rooms[2]),cx(rooms[3]),cz(rooms[3]));
+  carveCorridor(cx(rooms[3]),cz(rooms[3]),cx(rooms[4]),cz(rooms[4]));
+  carveCorridor(cx(rooms[0]),cz(rooms[0]),cx(rooms[5]),cz(rooms[5]));
+  carveCorridor(cx(rooms[1]),cz(rooms[1]),cx(rooms[6]),cz(rooms[6]));
+  carveCorridor(cx(rooms[2]),cz(rooms[2]),cx(rooms[7]),cz(rooms[7]));
+  carveCorridor(cx(rooms[3]),cz(rooms[3]),cx(rooms[8]),cz(rooms[8]));
+  carveCorridor(cx(rooms[4]),cz(rooms[4]),cx(rooms[8]),cz(rooms[8]));
+  carveCorridor(cx(rooms[5]),cz(rooms[5]),cx(rooms[6]),cz(rooms[6]));
+  carveCorridor(cx(rooms[6]),cz(rooms[6]),cx(rooms[7]),cz(rooms[7]));
+  carveCorridor(cx(rooms[7]),cz(rooms[7]),cx(rooms[8]),cz(rooms[8]));
+  carveCorridor(cx(rooms[5]),cz(rooms[5]),cx(rooms[9]),cz(rooms[9]));
+  carveCorridor(cx(rooms[6]),cz(rooms[6]),cx(rooms[10]),cz(rooms[10]));
+  carveCorridor(cx(rooms[7]),cz(rooms[7]),cx(rooms[11]),cz(rooms[11]));
+  carveCorridor(cx(rooms[8]),cz(rooms[8]),cx(rooms[12]),cz(rooms[12]));
+  carveCorridor(cx(rooms[9]),cz(rooms[9]),cx(rooms[10]),cz(rooms[10]));
+  carveCorridor(cx(rooms[10]),cz(rooms[10]),cx(rooms[11]),cz(rooms[11]));
+  carveCorridor(cx(rooms[11]),cz(rooms[11]),cx(rooms[12]),cz(rooms[12]));
+  carveCorridor(cx(rooms[9]),cz(rooms[9]),cx(rooms[13]),cz(rooms[13]));
+  carveCorridor(cx(rooms[10]),cz(rooms[10]),cx(rooms[14]),cz(rooms[14]));
+  carveCorridor(cx(rooms[13]),cz(rooms[13]),cx(rooms[14]),cz(rooms[14]));
+
+  // Выход на север
+  for(let x=30;x<=34;x++){map[0][x]=0;map[1][x]=0;}
+
+  // Зона сбора (комната 10) - всегда свободна
+  carveRoom(rooms[10].x1,rooms[10].z1,rooms[10].x2,rooms[10].z2);
+
   return map;
 }
 
-// ═══ КОРИДОР ПОБЕГА — ДЛИННЫЙ 768 ═══
+// ═══ КОРИДОР ПОБЕГА 64x300 ═══
 function genCorridorMap(){
   const W=64,H=300,map=[];
   for(let z=0;z<H;z++)map.push(new Array(W).fill(1));
-  // Коридор шириной 12 по центру
   const cx=Math.floor(W/2);
   for(let z=0;z<H;z++)for(let x=cx-6;x<=cx+6;x++)map[z][x]=0;
-  // Выход на севере открыт
   for(let x=cx-6;x<=cx+6;x++){map[0][x]=0;map[1][x]=0;}
   return map;
 }
@@ -56,31 +103,41 @@ function freeNear(map,x,z){
   return{x,z};
 }
 
-const SPAWNS=[{x:17,z:17},{x:18,z:17},{x:17,z:18},{x:18,z:18}];
-const MISHKAN_SPAWN={x:30,z:30};
-const EXIT_NORMAL={x:17.5,z:0.7};
-const GATHER={x:17.5,z:32};
+const SPAWNS=[{x:7,z:6},{x:8,z:6},{x:7,z:7},{x:8,z:7}];
+const MISHKAN_SPAWN={x:22,z:16};  // в комнате 6
+const EXIT_NORMAL={x:32,z:0.7};
+const GATHER={x:24.5,z:31};
 
 function makeItems(map){
   const defs=[
-    {id:'page_0',type:'page',x:2.5,z:1.5},{id:'page_1',type:'page',x:33.5,z:1.5},
-    {id:'page_2',type:'page',x:1.5,z:8.5},{id:'page_3',type:'page',x:8.5,z:8.5},
-    {id:'page_4',type:'page',x:26.5,z:8.5},{id:'page_5',type:'page',x:33.5,z:8.5},
-    {id:'page_6',type:'page',x:1.5,z:20.5},{id:'page_7',type:'page',x:8.5,z:20.5},
-    {id:'page_8',type:'page',x:8.5,z:26.5},{id:'page_9',type:'page',x:14.5,z:28.5},
-    {id:'energo_0',type:'energo',x:11.5,z:3.5},{id:'energo_1',type:'energo',x:23.5,z:3.5},
-    {id:'energo_2',type:'energo',x:5.5,z:14.5},{id:'energo_3',type:'energo',x:29.5,z:14.5},
-    {id:'energo_4',type:'energo',x:17.5,z:20.5},
+    {id:'page_0',type:'page',x:3.5,z:3.5},{id:'page_1',type:'page',x:10.5,z:4.5},
+    {id:'page_2',type:'page',x:31.5,z:5.5},{id:'page_3',type:'page',x:49.5,z:5.5},
+    {id:'page_4',type:'page',x:58.5,z:7.5},{id:'page_5',type:'page',x:3.5,z:17.5},
+    {id:'page_6',type:'page',x:55.5,z:17.5},{id:'page_7',type:'page',x:3.5,z:31.5},
+    {id:'page_8',type:'page',x:42.5,z:31.5},{id:'page_9',type:'page',x:8.5,z:47.5},
+    {id:'energo_0',type:'energo',x:18.5,z:4.5},{id:'energo_1',type:'energo',x:45.5,z:4.5},
+    {id:'energo_2',type:'energo',x:7.5,z:18.5},{id:'energo_3',type:'energo',x:57.5,z:18.5},
+    {id:'energo_4',type:'energo',x:24.5,z:30.5},
   ];
-  const cPool=[{x:4,z:4},{x:16,z:4},{x:28,z:4},{x:4,z:10},{x:28,z:10},{x:10,z:16},{x:24,z:16},{x:4,z:22},{x:28,z:22}];
-  const cn=5+Math.floor(Math.random()*3);
-  cPool.sort(()=>Math.random()-0.5).slice(0,cn).forEach((c,i)=>defs.push({id:`cross_${i}`,type:'cross',x:c.x+0.5,z:c.z+0.5}));
+  // Меньше крестов — только 3
+  const cPool=[{x:18,z:6},{x:36,z:14},{x:8,z:44}];
+  cPool.forEach((c,i)=>defs.push({id:`cross_${i}`,type:'cross',x:c.x+0.5,z:c.z+0.5}));
+
+  // Шкафчики — по одному в каждой комнате (кроме стартовой и зоны сбора)
+  const lockerPositions=[
+    {x:11.5,z:4.5},{x:23.5,z:3.5},{x:37.5,z:3.5},{x:51.5,z:3.5},{x:61.5,z:4.5},
+    {x:3.5,z:20.5},{x:25.5,z:12.5},{x:39.5,z:15.5},{x:61.5,z:13.5},
+    {x:13.5,z:29.5},{x:49.5,z:29.5},{x:61.5,z:30.5},
+    {x:5.5,z:48.5},{x:43.5,z:46.5},
+  ];
+  lockerPositions.forEach((l,i)=>defs.push({id:`locker_${i}`,type:'locker',x:l.x,z:l.z}));
+
   return defs.map(d=>{const f=freeNear(map,d.x,d.z);return{...d,x:f.x,z:f.z,collected:false};});
 }
 
 function newMishkan(){
-  return{x:MISHKAN_SPAWN.x,z:MISHKAN_SPAWN.z,angle:0,speed:0.032,state:'patrol',
-    patrolTarget:{x:28,z:28},lastUpdate:Date.now(),gracePeriod:8000,
+  return{x:MISHKAN_SPAWN.x,z:MISHKAN_SPAWN.z,angle:0,speed:0.028,state:'patrol',
+    patrolTarget:{x:24,z:16},lastUpdate:Date.now(),gracePeriod:8000,
     banished:false,banishTimer:0,escapeRunning:false,
     stuckX:MISHKAN_SPAWN.x,stuckZ:MISHKAN_SPAWN.z,stuckT:0};
 }
@@ -101,16 +158,43 @@ function tickMishkan(gs){
   const now=Date.now(),dt=Math.min((now-m.lastUpdate)/1000,0.05);
   m.lastUpdate=now;
   if(m.banished){m.banishTimer-=dt;if(m.banishTimer<=0){m.banished=false;m.x=MISHKAN_SPAWN.x;m.z=MISHKAN_SPAWN.z;m.gracePeriod=gs.allPagesCollected?999999:5000;}return null;}
-  if(m.gracePeriod>0){m.gracePeriod-=dt*1000;moveTo(m,m.patrolTarget.x,m.patrolTarget.z,m.speed*45*dt*0.4,map);if(Math.sqrt((m.patrolTarget.x-m.x)**2+(m.patrolTarget.z-m.z)**2)<1)m.patrolTarget={x:25+Math.random()*8,z:25+Math.random()*8};return null;}
-  // escape phase — стоим пока не escapeRunning
+  if(m.gracePeriod>0){m.gracePeriod-=dt*1000;moveTo(m,m.patrolTarget.x,m.patrolTarget.z,m.speed*45*dt*0.4,map);if(Math.sqrt((m.patrolTarget.x-m.x)**2+(m.patrolTarget.z-m.z)**2)<1)m.patrolTarget={x:15+Math.random()*30,z:5+Math.random()*30};return null;}
   if(gs.escapeActive&&!m.escapeRunning)return null;
+  // Не преследуем игроков в шкафчиках — они спрятаны
   let closest=null,cd=Infinity;
-  gs.players.forEach(p=>{if(p.caught)return;const d=Math.sqrt((p.x-m.x)**2+(p.z-m.z)**2);if(d<cd){cd=d;closest=p;}});
-  if(!closest){moveTo(m,m.patrolTarget.x,m.patrolTarget.z,m.speed*45*dt*0.7,map);if(Math.sqrt((m.patrolTarget.x-m.x)**2+(m.patrolTarget.z-m.z)**2)<1){let nx,nz,a=0;do{nx=2+Math.floor(Math.random()*30);nz=2+Math.floor(Math.random()*30);a++;}while(map[nz]&&map[nz][nx]===1&&a<60);m.patrolTarget={x:nx+0.5,z:nz+0.5};}return null;}
+  gs.players.forEach(p=>{
+    if(p.caught||p.hidingLockerId)return;
+    const d=Math.sqrt((p.x-m.x)**2+(p.z-m.z)**2);
+    if(d<cd){cd=d;closest=p;}
+  });
+  // Проверить игроков в шкафчиках — мишкан подходит к шкафчику
+  gs.players.forEach(p=>{
+    if(!p.hidingLockerId)return;
+    const item=gs.items.find(i=>i.id===p.hidingLockerId);
+    if(!item)return;
+    const d=Math.sqrt((item.x-m.x)**2+(item.z-m.z)**2);
+    if(d<1.5&&!p.lockerMinigameActive){
+      p.lockerMinigameActive=true;
+      // сообщить игроку о начале мини-игры
+    }
+  });
+  if(!closest){
+    // Патрулировать, возможно идти к шкафчику со спрятанным игроком
+    let lockerTarget=null,ltd=Infinity;
+    gs.players.forEach(p=>{
+      if(!p.hidingLockerId)return;
+      const item=gs.items.find(i=>i.id===p.hidingLockerId);
+      if(!item)return;
+      const d=Math.sqrt((item.x-m.x)**2+(item.z-m.z)**2);
+      if(d<ltd){ltd=d;lockerTarget=item;}
+    });
+    if(lockerTarget){moveTo(m,lockerTarget.x,lockerTarget.z,m.speed*45*dt*0.9,map);}
+    else{moveTo(m,m.patrolTarget.x,m.patrolTarget.z,m.speed*45*dt*0.7,map);if(Math.sqrt((m.patrolTarget.x-m.x)**2+(m.patrolTarget.z-m.z)**2)<1){let nx,nz,a=0;do{nx=2+Math.floor(Math.random()*58);nz=2+Math.floor(Math.random()*55);a++;}while(map[nz]&&map[nz][nx]===1&&a<80);m.patrolTarget={x:nx+0.5,z:nz+0.5};}}
+    return null;
+  }
   if(cd<0.8&&!closest.caught){closest.caught=true;return{event:'caught',id:closest.id};}
   const eMult=m.escapeRunning?7.0:1.0;
   moveTo(m,closest.x,closest.z,m.speed*45*dt*(cd<8?1.2:1.0)*eMult,map);
-  // антизастревание
   m.stuckT+=dt;if(m.stuckT>1.5){const md=Math.sqrt((m.x-m.stuckX)**2+(m.z-m.stuckZ)**2);m.stuckT=0;m.stuckX=m.x;m.stuckZ=m.z;if(md<0.1){const tx=m.x+(closest.x-m.x)*0.3,tz=m.z+(closest.z-m.z)*0.3;if(map[Math.floor(tz)]&&map[Math.floor(tz)][Math.floor(tx)]!==1){m.x=tx;m.z=tz;}}}
   return null;
 }
@@ -123,34 +207,41 @@ function startLoop(code){
   lb.interval=setInterval(()=>{
     if(!lobbies[code]){clearInterval(lb.interval);return;}
     const gs=lb.gameState;if(!gs||gs.phase!=='playing')return;
-    if(!gs.prePhaseDone)return; // ждём пока клиенты пройдут фазы
+    if(!gs.prePhaseDone)return;
     const ev=tickMishkan(gs);
     if(ev?.event==='caught')bcast(code,{type:'player_caught',playerId:ev.id});
-    // Все страницы собраны → скрыть выход+мишкана
+
+    // Уведомить игроков в шкафчиках если мишкан рядом
+    gs.players.forEach(p=>{
+      if(!p.hidingLockerId)return;
+      const item=gs.items.find(i=>i.id===p.hidingLockerId);
+      if(!item)return;
+      const d=Math.sqrt((item.x-gs.mishkan.x)**2+(item.z-gs.mishkan.z)**2);
+      const ws=lb.players.find(lp=>lp.id===p.id)?.ws;
+      if(ws&&ws.readyState===WebSocket.OPEN){
+        ws.send(JSON.stringify({type:'locker_mishkan_dist',dist:d,active:p.lockerMinigameActive||false}));
+      }
+    });
+
     if(!gs.allPagesCollected&&gs.items.filter(i=>i.type==='page').every(p=>p.collected)){
       gs.allPagesCollected=true;
-      gs.mishkan.gracePeriod=999999; // бесконечный — мишкан стоит
+      gs.mishkan.gracePeriod=999999;
       bcast(code,{type:'pages_all_collected'});
     }
-    // Триггер финала — все в зоне сбора
     if(gs.allPagesCollected&&!gs.escapeActive){
       const alive=gs.players.filter(p=>!p.caught);
-      if(alive.length>0&&alive.every(p=>Math.sqrt((p.x-GATHER.x)**2+(p.z-GATHER.z)**2)<5)){
+      if(alive.length>0&&alive.every(p=>Math.sqrt((p.x-GATHER.x)**2+(p.z-GATHER.z)**2)<6)){
         gs.escapeActive=true;
         gs.escapeStart=Date.now();
-        // Пересобираем карту в коридор 64x64
         gs.map=genCorridorMap();
         gs.corridorMap=true;
-        // Игроки в южном конце (z≈245), бегут на север к z=0
-        const cx=32;
-        gs.players.forEach((p,i)=>{p.x=cx-2+i%3;p.z=288-Math.floor(i/3)*2;});
-        // Мишкан позади всех (z=762), стоит пока не escapeRunning
-        gs.mishkan.x=cx+0.5;gs.mishkan.z=295;gs.mishkan.escapeRunning=false;gs.mishkan.gracePeriod=0;
+        const cxC=32;
+        gs.players.forEach((p,i)=>{p.x=cxC-2+i%3;p.z=288-Math.floor(i/3)*2;p.hidingLockerId=null;p.lockerMinigameActive=false;});
+        // ИСПРАВЛЕНО: мишкан в самом конце коридора (z=295), не в стене
+        gs.mishkan.x=cxC;gs.mishkan.z=295;gs.mishkan.escapeRunning=false;gs.mishkan.gracePeriod=0;
         bcast(code,{type:'escape_start',map:gs.map,players:gs.players.map(p=>({id:p.id,x:p.x,z:p.z}))});
       }
     }
-    // escape_phase2 — мишкан начинает бежать (клиент присылает)
-    // Таймер 101с
     if(gs.escapeActive&&gs.escapeStart){
       const el=(Date.now()-gs.escapeStart)/1000;
       if(el>101){
@@ -161,17 +252,13 @@ function startLoop(code){
     bcast(code,{
       type:'game_state',
       mishkan:{x:gs.mishkan.x,z:gs.mishkan.z,angle:gs.mishkan.angle,state:gs.mishkan.state,banished:gs.mishkan.banished},
-      players:gs.players.map(p=>({id:p.id,name:p.name,x:p.x,z:p.z,angle:p.angle,caught:p.caught,hp:p.hp,color:p.color})),
+      players:gs.players.map(p=>({id:p.id,name:p.name,x:p.x,z:p.z,angle:p.angle,caught:p.caught,hp:p.hp,color:p.color,hidingLockerId:p.hidingLockerId||null})),
       items:gs.items,
       escapeActive:gs.escapeActive||false,
       allPagesCollected:gs.allPagesCollected||false,
     });
-    // Победа
     if(gs.escapeActive){
       gs.players.filter(p=>!p.caught).forEach(p=>{if(p.z<3){gs.phase='won';bcast(code,{type:'game_won'});}});
-    } else if(!gs.allPagesCollected){
-      const pages=gs.items.filter(i=>i.type==='page');const alive=gs.players.filter(p=>!p.caught);
-      if(pages.every(p=>p.collected)&&alive.length>0&&alive.every(p=>p.z<2)&&!gs.escapeActive){gs.phase='won';bcast(code,{type:'game_won'});}
     }
     if(gs.prePhaseDone&&gs.players.length>0&&gs.players.every(p=>p.caught)&&gs.phase==='playing'){gs.phase='lost';bcast(code,{type:'game_lost'});}
   },50);
@@ -187,7 +274,7 @@ wss.on('connection',ws=>{
       pCode=code;pId='p1';
       const colors=['#ff6b6b','#4ecdc4','#ffe66d','#a8e6cf'];
       lobbies[code].players.push({ws,id:'p1',name:msg.name||'Игрок 1',isHost:true,color:colors[0]});
-      lobbies[code].gameState.players.push({id:'p1',name:msg.name||'Игрок 1',x:SPAWNS[0].x,z:SPAWNS[0].z,angle:0,caught:false,hp:100,color:colors[0],stamina:100});
+      lobbies[code].gameState.players.push({id:'p1',name:msg.name||'Игрок 1',x:SPAWNS[0].x,z:SPAWNS[0].z,angle:0,caught:false,hp:100,color:colors[0],stamina:100,hidingLockerId:null,lockerMinigameActive:false});
       sendTo(ws,{type:'lobby_created',code,playerId:'p1',isHost:true});
       sendTo(ws,{type:'lobby_update',players:lobbies[code].players.map(p=>({id:p.id,name:p.name,color:p.color}))});
     }
@@ -199,17 +286,15 @@ wss.on('connection',ws=>{
       pCode=code;const idx=lobbies[code].players.length;pId=`p${idx+1}`;
       const colors=['#ff6b6b','#4ecdc4','#ffe66d','#a8e6cf'];const sp=SPAWNS[idx];
       lobbies[code].players.push({ws,id:pId,name:msg.name||`Игрок ${idx+1}`,isHost:false,color:colors[idx]});
-      lobbies[code].gameState.players.push({id:pId,name:msg.name||`Игрок ${idx+1}`,x:sp.x,z:sp.z,angle:0,caught:false,hp:100,color:colors[idx],stamina:100});
+      lobbies[code].gameState.players.push({id:pId,name:msg.name||`Игрок ${idx+1}`,x:sp.x,z:sp.z,angle:0,caught:false,hp:100,color:colors[idx],stamina:100,hidingLockerId:null,lockerMinigameActive:false});
       sendTo(ws,{type:'joined_lobby',code,playerId:pId,isHost:false,players:lobbies[code].players.map(p=>({id:p.id,name:p.name,color:p.color}))});
       bcast(code,{type:'lobby_update',players:lobbies[code].players.map(p=>({id:p.id,name:p.name,color:p.color}))});
     }
     else if(msg.type==='player_ready'){
-      // Pre-game ready system
       if(!pCode||!lobbies[pCode])return;
       const lb=lobbies[pCode];
       if(!lb.readySet)lb.readySet=new Set();
       lb.readySet.add(pId);
-      // Broadcast ready list to all
       bcast(pCode,{type:'player_ready_ack',readyIds:[...lb.readySet]});
     }
     else if(msg.type==='start_game'){
@@ -221,7 +306,6 @@ wss.on('connection',ws=>{
       startLoop(pCode);
     }
     else if(msg.type==='game_ready'){
-      // Клиент прошёл все фазы — активируем мишкана
       if(!pCode||!lobbies[pCode])return;
       const gs=lobbies[pCode].gameState;
       if(gs)gs.prePhaseDone=true;
@@ -230,19 +314,55 @@ wss.on('connection',ws=>{
       if(!pCode||!lobbies[pCode])return;
       const gs=lobbies[pCode].gameState,pl=gs.players.find(p=>p.id===pId);
       if(!pl||pl.caught)return;
-      pl.x=msg.x;pl.z=msg.z;pl.angle=msg.angle;
-      if(msg.sprint&&pl.stamina>0)pl.stamina=Math.max(0,pl.stamina-0.5);
-      else if(!msg.sprint)pl.stamina=Math.min(100,pl.stamina+0.2);
-      if(msg.interact){
+      if(!pl.hidingLockerId){
+        pl.x=msg.x;pl.z=msg.z;pl.angle=msg.angle;
+        if(msg.sprint&&pl.stamina>0)pl.stamina=Math.max(0,pl.stamina-0.5);
+        else if(!msg.sprint)pl.stamina=Math.min(100,pl.stamina+0.2);
+      }
+      if(msg.interact&&!pl.hidingLockerId){
         gs.items.forEach(item=>{
           if(item.collected)return;
-          if(Math.sqrt((pl.x-item.x)**2+(pl.z-item.z)**2)<1.3){
+          const dist=Math.sqrt((pl.x-item.x)**2+(pl.z-item.z)**2);
+          if(dist<1.4){
+            if(item.type==='locker'){
+              // Войти в шкафчик
+              pl.hidingLockerId=item.id;
+              const ws2=lobbies[pCode].players.find(lp=>lp.id===pId)?.ws;
+              if(ws2)sendTo(ws2,{type:'locker_entered',lockerId:item.id});
+              return;
+            }
             item.collected=true;
             if(item.type==='energo'){pl.adrenaline=true;setTimeout(()=>{if(pl)pl.adrenaline=false;},8000);}
             bcast(pCode,{type:'item_collected',itemId:item.id,itemType:item.type,playerId:pId});
           }
         });
       }
+      if(msg.interact&&pl.hidingLockerId){
+        // Выйти из шкафчика (если мини-игра не активна)
+        if(!pl.lockerMinigameActive){
+          pl.hidingLockerId=null;
+          const ws2=lobbies[pCode].players.find(lp=>lp.id===pId)?.ws;
+          if(ws2)sendTo(ws2,{type:'locker_exited'});
+        }
+      }
+    }
+    else if(msg.type==='locker_minigame_fail'){
+      if(!pCode||!lobbies[pCode])return;
+      const gs=lobbies[pCode].gameState;
+      const pl=gs.players.find(p=>p.id===pId);
+      if(!pl||!pl.hidingLockerId)return;
+      pl.hidingLockerId=null;pl.lockerMinigameActive=false;
+      pl.caught=true;
+      bcast(pCode,{type:'player_caught',playerId:pId,fromLocker:true,lockerScream:true});
+    }
+    else if(msg.type==='locker_minigame_success'){
+      if(!pCode||!lobbies[pCode])return;
+      const gs=lobbies[pCode].gameState;
+      const pl=gs.players.find(p=>p.id===pId);
+      if(!pl)return;
+      pl.lockerMinigameActive=false;
+      // Мишкан уходит от шкафчика — сбросить патрульную цель
+      gs.mishkan.patrolTarget={x:10+Math.random()*50,z:5+Math.random()*45};
     }
     else if(msg.type==='escape_phase2'){
       if(!pCode||!lobbies[pCode])return;
@@ -252,8 +372,7 @@ wss.on('connection',ws=>{
     else if(msg.type==='use_cross'){
       if(!pCode||!lobbies[pCode])return;
       const gs=lobbies[pCode].gameState;
-      if(gs.escapeActive)return; // нельзя изгнать во время побега
-      const d=Math.sqrt((gs.players.find(p=>p.id===pId)?.x-gs.mishkan.x)**2||0+(gs.players.find(p=>p.id===pId)?.z-gs.mishkan.z)**2||0);
+      if(gs.escapeActive)return;
       if(!gs.mishkan.banished){gs.mishkan.banished=true;gs.mishkan.banishTimer=30;bcast(pCode,{type:'mishkan_banished',duration:30});}
     }
     else if(msg.type==='heal_player'){
