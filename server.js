@@ -274,7 +274,7 @@ wss.on('connection',ws=>{
       pCode=code;pId='p1';
       const colors=['#ff6b6b','#4ecdc4','#ffe66d','#a8e6cf'];
       lobbies[code].players.push({ws,id:'p1',name:msg.name||'Игрок 1',isHost:true,color:colors[0]});
-      lobbies[code].gameState.players.push({id:'p1',name:msg.name||'Игрок 1',x:SPAWNS[0].x,z:SPAWNS[0].z,angle:0,caught:false,hp:100,color:colors[0],stamina:100,hidingLockerId:null,lockerMinigameActive:false});
+      lobbies[code].gameState.players.push({id:'p1',name:msg.name||'Игрок 1',x:SPAWNS[0].x,z:SPAWNS[0].z,angle:0,caught:false,hp:100,color:colors[0],stamina:100,hidingLockerId:null,lockerMinigameActive:false,lockerEnterTime:null});
       sendTo(ws,{type:'lobby_created',code,playerId:'p1',isHost:true});
       sendTo(ws,{type:'lobby_update',players:lobbies[code].players.map(p=>({id:p.id,name:p.name,color:p.color}))});
     }
@@ -286,7 +286,7 @@ wss.on('connection',ws=>{
       pCode=code;const idx=lobbies[code].players.length;pId=`p${idx+1}`;
       const colors=['#ff6b6b','#4ecdc4','#ffe66d','#a8e6cf'];const sp=SPAWNS[idx];
       lobbies[code].players.push({ws,id:pId,name:msg.name||`Игрок ${idx+1}`,isHost:false,color:colors[idx]});
-      lobbies[code].gameState.players.push({id:pId,name:msg.name||`Игрок ${idx+1}`,x:sp.x,z:sp.z,angle:0,caught:false,hp:100,color:colors[idx],stamina:100,hidingLockerId:null,lockerMinigameActive:false});
+      lobbies[code].gameState.players.push({id:pId,name:msg.name||`Игрок ${idx+1}`,x:sp.x,z:sp.z,angle:0,caught:false,hp:100,color:colors[idx],stamina:100,hidingLockerId:null,lockerMinigameActive:false,lockerEnterTime:null});
       sendTo(ws,{type:'joined_lobby',code,playerId:pId,isHost:false,players:lobbies[code].players.map(p=>({id:p.id,name:p.name,color:p.color}))});
       bcast(code,{type:'lobby_update',players:lobbies[code].players.map(p=>({id:p.id,name:p.name,color:p.color}))});
     }
@@ -321,12 +321,13 @@ wss.on('connection',ws=>{
       }
       if(msg.interact&&!pl.hidingLockerId){
         gs.items.forEach(item=>{
-          if(item.collected)return;
+          if(item.type!=='locker'&&item.collected)return; // lockers never collected
           const dist=Math.sqrt((pl.x-item.x)**2+(pl.z-item.z)**2);
           if(dist<1.4){
             if(item.type==='locker'){
               // Войти в шкафчик
               pl.hidingLockerId=item.id;
+              pl.lockerEnterTime=Date.now(); // timestamp входа
               const ws2=lobbies[pCode].players.find(lp=>lp.id===pId)?.ws;
               if(ws2)sendTo(ws2,{type:'locker_entered',lockerId:item.id});
               return;
@@ -338,9 +339,11 @@ wss.on('connection',ws=>{
         });
       }
       if(msg.interact&&pl.hidingLockerId){
-        // Выйти из шкафчика (если мини-игра не активна)
-        if(!pl.lockerMinigameActive){
+        // Выйти из шкафчика — только если прошло >800мс после входа и нет мини-игры
+        const enterCooldown=!pl.lockerEnterTime||(Date.now()-pl.lockerEnterTime)>800;
+        if(!pl.lockerMinigameActive&&enterCooldown){
           pl.hidingLockerId=null;
+          pl.lockerEnterTime=null;
           const ws2=lobbies[pCode].players.find(lp=>lp.id===pId)?.ws;
           if(ws2)sendTo(ws2,{type:'locker_exited'});
         }
