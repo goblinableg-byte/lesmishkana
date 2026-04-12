@@ -1852,27 +1852,6 @@ function renderCorridorWithPlayers(cv,player,map,otherPlayers){
   ctx.save();ctx.fillStyle='rgba(0,255,60,0.7)';ctx.font=`${Math.floor(H*0.06)}px VT323,monospace`;ctx.textAlign='center';ctx.fillText(t('corrArrow'),W/2,H-30);ctx.restore();
   const vg=ctx.createRadialGradient(W/2,H/2,H*.2,W/2,H/2,H*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.7)');ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
 }
-  const ctx=cv.getContext('2d');const W=cv.width,H=cv.height;
-  const px=player.x,pz=player.z,yaw=player.camY,pitch=player.camP||0;
-  const horizon=Math.floor(H/2+pitch*H*0.5);
-  const SZ=map.length,SX=map[0].length;
-  ctx.fillStyle='#010501';ctx.fillRect(0,0,W,horizon);
-  const fg=ctx.createLinearGradient(0,horizon,0,H);fg.addColorStop(0,'#0a140a');fg.addColorStop(1,'#020602');ctx.fillStyle=fg;ctx.fillRect(0,horizon,W,H-horizon);
-  const fov=Math.PI/2.5,hf=fov/2;const zB=new Float32Array(W);
-  for(let col=0;col<W;col++){
-    const ra=yaw-hf+(col/W)*fov;const rdx=Math.sin(ra),rdz=Math.cos(ra);
-    let mx2=Math.floor(px),mz2=Math.floor(pz);
-    const sx=rdx>0?1:-1,sz=rdz>0?1:-1;const ddx=Math.abs(1/rdx),ddz=Math.abs(1/rdz);
-    let sdx=(rdx>0?(mx2+1-px):(px-mx2))*ddx,sdz=(rdz>0?(mz2+1-pz):(pz-mz2))*ddz;let side=0,hit=false;
-    for(let s=0;s<100;s++){if(sdx<sdz){sdx+=ddx;mx2+=sx;side=0;}else{sdz+=ddz;mz2+=sz;side=1;}if(mz2<0||mz2>=SZ||mx2<0||mx2>=SX)break;if(map[mz2][mx2]===1){hit=true;break;}}
-    const dist=hit?Math.max(0.001,(side===0?(sdx-ddx):(sdz-ddz))*Math.cos(ra-yaw)):40;zB[col]=dist;
-    const f=Math.max(0,1-dist/18);const r=Math.floor(side===0?42*f:28*f),g2=Math.floor(side===0?58*f:40*f),b=Math.floor(side===0?28*f:18*f);
-    const wh=Math.min(H*4,Math.floor(H/dist)),wt=Math.floor(horizon-wh/2);ctx.fillStyle=`rgb(${r},${g2},${b})`;ctx.fillRect(col,wt,1,Math.max(1,wh));
-  }
-  if(pz<25){const eDist=pz;if(eDist>0.5){let er=Math.atan2(10-px,0.5-pz)-yaw;while(er>Math.PI)er-=Math.PI*2;while(er<-Math.PI)er+=Math.PI*2;if(Math.abs(er)<hf*1.1){const esx=Math.floor(W/2+(er/hf)*(W/2));const esh=Math.min(H*2,Math.floor(H/eDist*1.2)),esw=Math.floor(esh*0.5);const eb=Math.max(0,1-eDist/22);ctx.save();ctx.globalAlpha=eb*0.8;ctx.fillStyle='#00ff40';ctx.fillRect(esx-Math.floor(esw/2),Math.floor(horizon-esh*.9),3,esh);ctx.fillRect(esx+Math.floor(esw/2)-3,Math.floor(horizon-esh*.9),3,esh);ctx.fillRect(esx-Math.floor(esw/2),Math.floor(horizon-esh*.9),esw,3);ctx.globalAlpha=eb*0.06;ctx.fillStyle='#00ff40';ctx.fillRect(esx-Math.floor(esw/2)+3,Math.floor(horizon-esh*.9)+3,esw-6,esh-3);ctx.restore();}}}
-  ctx.save();ctx.fillStyle='rgba(0,255,60,0.7)';ctx.font=`${Math.floor(H*0.06)}px VT323,monospace`;ctx.textAlign='center';ctx.fillText(t('corrArrow'),W/2,H-30);ctx.restore();
-  const vg=ctx.createRadialGradient(W/2,H/2,H*.2,W/2,H/2,H*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.7)');ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
-}
 
 function setupCorridorControls(){
   const jz=document.getElementById('jz2'),kn=document.getElementById('jk2'),KR=55;let jPtr=null;
