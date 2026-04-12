@@ -97,6 +97,33 @@ input.inp:focus{border-color:#ff3030;}
 /* Language button */
 #lang-btn{position:fixed;top:12px;right:12px;z-index:9999;background:rgba(0,0,0,.75);border:2px solid #3a6a3a;color:#c8d8b0;font-family:'VT323',monospace;font-size:1.2rem;padding:5px 14px;cursor:pointer;letter-spacing:2px;border-radius:4px;transition:all .2s;}
 #lang-btn:hover{background:#3a6a3a;}
+
+/* LOCKER MINIGAME */
+#locker-mg{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;flex-direction:column;pointer-events:all;}
+#locker-mg.active{display:flex;}
+#locker-bg-blur{position:absolute;inset:0;background:rgba(0,0,10,0.85);backdrop-filter:blur(4px);}
+#locker-inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:18px;width:280px;}
+#locker-title{font-family:'Creepster',cursive;font-size:1.6rem;color:#8888ff;text-shadow:0 0 15px #4444ff88;letter-spacing:2px;text-align:center;}
+#locker-beat-zone{position:relative;width:120px;height:120px;display:flex;align-items:center;justify-content:center;}
+#locker-heart-btn{width:90px;height:90px;border-radius:50%;border:4px solid #cc2244;background:radial-gradient(circle at 40% 35%,#ff4466,#880022);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:2.8rem;transition:transform 0.06s;box-shadow:0 0 20px #ff004488;-webkit-tap-highlight-color:transparent;touch-action:none;}
+#locker-heart-btn:active,#locker-heart-btn.pressed{transform:scale(0.82);box-shadow:0 0 40px #ff0066cc;}
+#locker-ripple{position:absolute;width:90px;height:90px;border-radius:50%;border:3px solid #ff4466;opacity:0;pointer-events:none;transform:scale(1);}
+@keyframes rippleOut{0%{transform:scale(1);opacity:0.7;}100%{transform:scale(2.2);opacity:0;}}
+.ripple-anim{animation:rippleOut 0.6s ease-out forwards;}
+#locker-bar-wrap{width:240px;position:relative;}
+#locker-bar-track{width:100%;height:18px;background:#111;border:2px solid #333;border-radius:9px;overflow:visible;position:relative;}
+#locker-bar-fill{height:100%;background:linear-gradient(90deg,#002288,#4466ff);border-radius:7px;transition:width 0.05s;width:50%;}
+#locker-beat-marker{position:absolute;top:-6px;width:8px;height:30px;background:#ff4488;border-radius:4px;transform:translateX(-50%);transition:left 0.05s;}
+#locker-beat-window{position:absolute;top:-4px;height:26px;background:rgba(100,255,100,0.25);border:2px solid #44ff44;border-radius:4px;pointer-events:none;}
+#locker-timer-bar{width:240px;height:8px;background:#1a0008;border-radius:4px;overflow:hidden;border:1px solid #440011;}
+#locker-timer-fill{height:100%;background:linear-gradient(90deg,#ff0033,#ff6600);border-radius:4px;transition:width 0.1s;width:100%;}
+#locker-feedback{font-family:'VT323',monospace;font-size:1.4rem;color:#44ff44;letter-spacing:2px;min-height:1.6rem;text-align:center;transition:color 0.2s;}
+#locker-miss-overlay{position:fixed;inset:0;background:rgba(255,0,0,0);pointer-events:none;z-index:49;transition:background 0.1s;}
+
+/* LOCKER DOOR CUTSCENE */
+#locker-cs{position:fixed;inset:0;z-index:80;display:none;background:#000;}
+#locker-cs.active{display:block;}
+#locker-cs-canvas{width:100%;height:100%;display:block;}
 </style>
 </head>
 <body>
@@ -220,6 +247,33 @@ input.inp:focus{border-color:#ff3030;}
   <button class="btn" id="btn-menu" onclick="location.reload()"></button>
 </div>
 
+<!-- LOCKER MINIGAME OVERLAY -->
+<div id="locker-mg">
+  <div id="locker-bg-blur"></div>
+  <div id="locker-inner">
+    <div id="locker-title"></div>
+    <div id="locker-beat-zone">
+      <div id="locker-ripple"></div>
+      <button id="locker-heart-btn" ontouchstart="lockerBeat(event)" onpointerdown="lockerBeat(event)">❤️</button>
+    </div>
+    <div id="locker-bar-wrap">
+      <div id="locker-bar-track">
+        <div id="locker-bar-fill" style="width:50%"></div>
+        <div id="locker-beat-window" style="left:40%;width:18%"></div>
+        <div id="locker-beat-marker" style="left:50%"></div>
+      </div>
+    </div>
+    <div id="locker-timer-bar"><div id="locker-timer-fill"></div></div>
+    <div id="locker-feedback"></div>
+  </div>
+</div>
+<div id="locker-miss-overlay"></div>
+
+<!-- LOCKER FAIL CUTSCENE -->
+<div id="locker-cs">
+  <canvas id="locker-cs-canvas"></canvas>
+</div>
+
 <script>
 'use strict';
 
@@ -270,6 +324,7 @@ const T = {
     tutContent: `📄 <b style="color:#f0c030">Страницы</b> — собери все 10, они светятся на карте<br>
 ⚡ <b style="color:#00ffaa">Энергосы</b> — даёт ускорение на 8 секунд<br>
 ✝ <b style="color:#8888ff">Крест</b> — изгоняет Мишкана на 30 сек (кнопка G)<br>
+🔵 <b style="color:#4488ff">Синий шкафчик</b> — нажми E чтобы спрятаться. Когда Мишкан подходит — начинается мини-игра: нажимай ❤️ в ритм пульса! Промахнёшься — конец.<br>
 🟡 <b style="color:#ffc800">Жёлтая точка</b> — точка сбора после всех страниц<br>
 💉 <b style="color:#ff6b6b">Лечение</b> — подойди к пойманному и нажми E<br>
 🏃 <b style="color:#c8d8b0">Побег</b> — беги к выходу на севере, не попадись!<br>
@@ -319,10 +374,16 @@ const T = {
     bobD7: 'Бобик: "КТО ВЫБЕРЕТСЯ — ТОТ УЙДЁТ. ОСТАЛЬНЫЕ НЕ НА МОЕЙ ВИНЕ"',
     bobD8: 'Бобик: "А так — я вам помогу найти моего друга и избавить его от проклятия"',
     bobD9: (n) => `${n}: "Спасибо, Бобик!"`,
-    bobikTips: ['Тихо... я его чувствую.','Мишкан не злой. Просто одинокий.','Страницы видны на карте!','Энергос помогает убежать!','Кресты — синие на карте!'],
+    bobikTips: ['Тихо... я его чувствую.','Мишкан не злой. Просто одинокий.','Страницы видны на карте!','Энергос помогает убежать!','Синие шкафчики спасают жизнь!'],
     langBtn: '🌐 DE',
     youSuffix: ' (ты)',
     defaultPlayer: 'Игрок',
+    lockerTitle: '💙 ЗАТАИСЬ — КОНТРОЛИРУЙ ПУЛЬС',
+    lockerHide: '[ E ] Спрятаться в шкафчик',
+    lockerExit: '[ E ] Выйти из шкафчика',
+    lockerBeatGood: '✓ РИТМ!',
+    lockerBeatMiss: '✗ ПРОМАХ',
+    lockerSurvived: 'Мишкан ушёл! Ты спасён!',
   },
   de: {
     pageTitle: 'Mishkans Wald',
@@ -367,6 +428,7 @@ const T = {
     tutContent: `📄 <b style="color:#f0c030">Seiten</b> — Sammle alle 10, sie leuchten auf der Karte<br>
 ⚡ <b style="color:#00ffaa">Energos</b> — Gibt 8 Sekunden Beschleunigung<br>
 ✝ <b style="color:#8888ff">Kreuz</b> — Verbannt Mishkan für 30 Sek (Taste G)<br>
+🔵 <b style="color:#4488ff">Blauer Schrank</b> — Drücke E um dich zu verstecken. Wenn Mishkan naht — Minispiel: Tippe ❤️ im Herzrhythmus! Verpasst du — du bist gefangen.<br>
 🟡 <b style="color:#ffc800">Gelber Punkt</b> — Sammelzone nach allen Seiten<br>
 💉 <b style="color:#ff6b6b">Heilung</b> — Geh zu einem Gefangenen und drücke E<br>
 🏃 <b style="color:#c8d8b0">Flucht</b> — Lauf zum Ausgang im Norden, lass dich nicht fangen!<br>
@@ -416,10 +478,16 @@ const T = {
     bobD7: 'Bobik: "WER ENTKOMMEN WIRD — DER GEHT. DIE ANDEREN SIND NICHT MEINE SCHULD"',
     bobD8: 'Bobik: "Jedenfalls — ich helfe euch meinen Freund zu finden und ihn vom Fluch zu befreien"',
     bobD9: (n) => `${n}: "Danke, Bobik!"`,
-    bobikTips: ['Leise... ich spüre ihn.','Mishkan ist nicht böse. Nur einsam.','Seiten sind auf der Karte sichtbar!','Energo hilft zu fliehen!','Kreuze — blau auf der Karte!'],
+    bobikTips: ['Leise... ich spüre ihn.','Mishkan ist nicht böse. Nur einsam.','Seiten sind auf der Karte sichtbar!','Energo hilft zu fliehen!','Blaue Schränke retten dein Leben!'],
     langBtn: '🌐 RU',
     youSuffix: ' (du)',
     defaultPlayer: 'Spieler',
+    lockerTitle: '💙 VERSTECK DICH — PULS KONTROLLIEREN',
+    lockerHide: '[ E ] Im Schrank verstecken',
+    lockerExit: '[ E ] Schrank verlassen',
+    lockerBeatGood: '✓ RHYTHMUS!',
+    lockerBeatMiss: '✗ VERFEHLT',
+    lockerSurvived: 'Mishkan ist weg! Du bist gerettet!',
   }
 };
 
@@ -471,6 +539,9 @@ function applyLang() {
   setText('tut-title', t('tutTitle'));
   const tc = document.getElementById('tut-content');
   if (tc) tc.innerHTML = t('tutContent');
+  // Locker minigame
+  const lt = document.getElementById('locker-title');
+  if (lt) lt.textContent = t('lockerTitle');
   // Room ready button
   const rrb = document.getElementById('room-ready-btn');
   if (rrb && !rrb.disabled) rrb.textContent = t('roomReadyBtn');
@@ -521,6 +592,12 @@ function iAU(){
   AU.caught=new Audio('https://image2url.com/r2/default/files/1775503969660-11d003f6-bf69-4148-bb38-965ed4f0808b.mp3');
   AU.banish=new Audio('https://image2url.com/r2/default/files/1775834476207-f1cf1086-1de2-4272-bc82-04a588404a04.mp3');
   AU.escape=new Audio('https://image2url.com/r2/default/files/1775835239510-86b663b2-fa42-4f2f-b724-66f4bc72cfe7.m4a');
+  // Сердцебиение — для мини-игры в шкафчике
+  AU.heartbeat=new Audio('https://image2url.com/r2/default/files/1775932358232-5f38fb59-f1ba-4f52-a6bd-c7ae7b777c91.mp3');AU.heartbeat.loop=true;AU.heartbeat.volume=0.85;
+  // Звук открытия двери шкафа (катсцена провала)
+  AU.lockerDoor=new Audio('https://image2url.com/r2/default/files/1775932724319-919b3923-75b4-4265-a22d-998c45675b12.mp3');AU.lockerDoor.volume=1.0;
+  // Скример при провале мини-игры
+  AU.lockerScream=new Audio('https://image2url.com/r2/default/files/1775932358232-5f38fb59-f1ba-4f52-a6bd-c7ae7b777c91.mp3');AU.lockerScream.volume=1.0;
   try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}
 }
 function step(){if(!actx)return;const b=actx.createBuffer(1,Math.floor(actx.sampleRate*.05),actx.sampleRate);const d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/600)*.28;const s=actx.createBufferSource(),g=actx.createGain();g.gain.value=.22;s.buffer=b;s.connect(g);g.connect(actx.destination);s.start();}
@@ -546,8 +623,8 @@ function startGame(){send({type:'start_game'});}
 function uLobby(pl){const el=document.getElementById('lobby-players');el.innerHTML='';pl.forEach(p=>{const d=document.createElement('div');d.className='lp';d.innerHTML=`<div class="pdot" style="background:${p.color}"></div><span>${p.name}</span>`;el.appendChild(d);});}
 
 // ══ STATE ══
-const G={map:null,MS:36,items:[],players:{},M:{x:30,z:30,angle:0,banished:false},myP:null,caught:false,stamina:100,sprint:false,adr:false,adrT:0,keys:{u:false,d:false,l:false,r:false},jX:0,jZ:0,interact:false,pages:0,allP:false,exitH:false,camY:Math.PI,camP:0,bT:0,bAmt:0,sT:0,sX:0,sY:0,dis:false,escA:false,escP2:false,fO:[],stun:false,stunT:0,hasCr:false,crU:false,crA:0,mBan:false,mBanT:0,mRise:0,monIv:null,fallIv:null,gameReady:false};
-const GATHER={x:17.5,z:32},EXIT_N={x:32,z:1.5},MS={x:30,z:30};
+const G={map:null,MS:64,items:[],players:{},M:{x:22,z:16,angle:0,banished:false},myP:null,caught:false,stamina:100,sprint:false,adr:false,adrT:0,keys:{u:false,d:false,l:false,r:false},jX:0,jZ:0,interact:false,pages:0,allP:false,exitH:false,camY:Math.PI,camP:0,bT:0,bAmt:0,sT:0,sX:0,sY:0,dis:false,escA:false,escP2:false,fO:[],stun:false,stunT:0,hasCr:false,crU:false,crA:0,mBan:false,mBanT:0,mRise:0,monIv:null,fallIv:null,gameReady:false,inLocker:false,lockerMgActive:false};
+const GATHER={x:24.5,z:31},EXIT_N={x:32,z:1.5},MS={x:22,z:16};
 
 // ══ RAYCASTER ══
 let RC=null,RX=null,RW=0,RH=0;
@@ -585,7 +662,7 @@ function render(){
     ctx.fillStyle=wCol(side,dist,hx,hz,px,pz,ra);ctx.fillRect(col,wt,1,Math.max(1,wh));
   }
   const spr=[];
-  if(!G.escA)G.items.forEach(i=>{if(!i.collected)spr.push({x:i.x,z:i.z,t:i.type,d:i});});
+  if(!G.escA)G.items.forEach(i=>{if(!i.collected||(i.type==='locker'))spr.push({x:i.x,z:i.z,t:i.type,d:i});});
   Object.values(G.players).forEach(p=>{if(p.id!==myId)spr.push({x:p.x,z:p.z,t:'player',d:p});});
   if(G.escA){spr.push({x:G.M.x,z:G.M.z,t:'mishkan',d:{...G.M,rY:G.mRise||0}});}
   else if(!G.exitH&&!G.M.banished){spr.push({x:G.M.x,z:G.M.z,t:'mishkan',d:{...G.M,rY:G.mRise||0}});}
@@ -627,6 +704,26 @@ function dSpr(ctx,tp,d,x,top,h,u,br){
   if(tp==='energo'){const g=(Math.sin(Date.now()*.005+u*5)+1)*.5,lb=u>.2&&u<.8&&Math.abs(u-.5)<.2;ctx.fillStyle=lb?`rgba(0,${Math.floor((200+g*55)*br)},${Math.floor(160*br)},${br})`:`rgba(0,${Math.floor(70*br)},${Math.floor(50*br)},${br})`;ctx.fillRect(x,top,1,Math.floor(h*.68));return;}
   if(tp==='cross'){const g=(Math.sin(Date.now()*.004+u*4)+1)*.5,iv=u>.42&&u<.58,ih=u>.22&&u<.78;if(iv){ctx.fillStyle=`rgba(${Math.floor((200+g*55)*br)},${Math.floor((200+g*55)*br)},255,${br})`;ctx.fillRect(x,Math.floor(top+h*.08),1,Math.floor(h*.75));}else if(ih){ctx.fillStyle=`rgba(${Math.floor((180+g*45)*br)},${Math.floor((180+g*45)*br)},230,${br*.85})`;ctx.fillRect(x,Math.floor(top+h*.28),1,Math.floor(h*.14));}return;}
   if(tp==='fall'){const g=(Math.sin(Date.now()*.008+u*3)+1)*.5;ctx.fillStyle=`rgba(${Math.floor((120+g*40)*br)},${Math.floor((100+g*30)*br)},${Math.floor(80*br)},${br})`;ctx.fillRect(x,top,1,Math.floor(h*.65));}
+  if(tp==='locker'){
+    // Синий шкафчик — рисуем колонку по полосам текстуры
+    const lh=Math.floor(h*.9),lt=top+Math.floor(h*.05);
+    const glow=(Math.sin(Date.now()*.003+u*4)+1)*.5;
+    const isDoor=u>.15&&u<.85; // центральная панель — дверь
+    const isEdge=u<.1||u>.9;
+    const isHandle=Math.abs(u-.82)<.04&&(top+lh*.35)<x&&x<(top+lh*.65);// хэндл
+    if(isEdge){ctx.fillStyle=`rgba(${Math.floor(20*br)},${Math.floor(30*br)},${Math.floor(55*br)},${br})`;ctx.fillRect(x,lt,1,lh);}
+    else if(isDoor){
+      const doorBr=br*(0.75+glow*0.25);
+      ctx.fillStyle=`rgba(${Math.floor((30+glow*20)*doorBr)},${Math.floor((80+glow*40)*doorBr)},${Math.floor((180+glow*60)*doorBr)},${doorBr})`;
+      ctx.fillRect(x,lt,1,lh);
+      // горизонтальные полосы шкафа
+      const stripY=lt+Math.floor(lh*0.5);
+      ctx.fillStyle=`rgba(${Math.floor(10*br)},${Math.floor(20*br)},${Math.floor(50*br)},${br})`;
+      ctx.fillRect(x,stripY,1,2);
+    }else{ctx.fillStyle=`rgba(${Math.floor(40*br)},${Math.floor(100*br)},${Math.floor(200*br)},${br})`;ctx.fillRect(x,lt,1,lh);}
+    // ручка шкафа
+    if(Math.abs(u-.78)<.03){const hY=lt+Math.floor(lh*.38),hH=Math.floor(lh*.22);ctx.fillStyle=`rgba(${Math.floor(200*br)},${Math.floor(200*br)},${Math.floor(220*br)},${br})`;ctx.fillRect(x,hY,1,hH);}
+  }
 }
 function mFb(ctx,x,top,h,u,br){const p=(Math.sin(Date.now()*.003)+1)*.5,ie=Math.abs(u-.28)<.08||Math.abs(u-.72)<.08,ia=u<.1||u>.9;if(ie){ctx.fillStyle=`rgba(${Math.floor(26*br)},${Math.floor(10*br)},0,${br})`;ctx.fillRect(x,top,1,Math.floor(h*.2));ctx.fillStyle=`rgba(255,${Math.floor(15*br)},0,${Math.min(1,br+p*.4)})`;ctx.fillRect(x,Math.floor(top+h*.2),1,Math.floor(h*.15));ctx.fillStyle=`rgba(${Math.floor(22*br)},${Math.floor(8*br)},0,${br})`;ctx.fillRect(x,Math.floor(top+h*.35),1,Math.floor(h*.5));}else if(ia){ctx.fillStyle=`rgba(${Math.floor(18*br)},${Math.floor(7*br)},0,${br})`;ctx.fillRect(x,Math.floor(top+h*.3),1,Math.floor(h*.45));}else{ctx.fillStyle=`rgba(${Math.floor(25*br)},${Math.floor(10*br)},0,${br})`;ctx.fillRect(x,top,1,Math.floor(h*.88));}}
 function dCrH(){const cc=document.getElementById('crc'),cx=cc.getContext('2d');cc.width=44;cc.height=44;cx.clearRect(0,0,44,44);const a=G.crA;cx.strokeStyle=a>.05?`rgba(160,160,255,${0.85+a*.15})`:'rgba(200,200,255,0.8)';cx.lineWidth=a>.05?6:5;cx.lineCap='round';if(a>.05){cx.shadowColor='rgba(100,100,255,0.8)';cx.shadowBlur=10+a*15;}cx.beginPath();cx.moveTo(22,4);cx.lineTo(22,40);cx.moveTo(8,14);cx.lineTo(36,14);cx.stroke();document.getElementById('crh').style.display='flex';}
@@ -646,6 +743,8 @@ function rMM(){
   G.items.forEach(i=>{if(i.type!=='page'||G.escA)return;const g=(Math.sin(Date.now()*.004+i.x)+1)*.5;ctx.globalAlpha=i.collected?.25:0.7+g*.3;ctx.fillStyle=i.collected?'#5a4010':'#f0c030';const s=i.collected?CX*.28:CX*.4;ctx.fillRect(i.x*CX-s/2,i.z*CZ-s/2,s,s);ctx.globalAlpha=1;});
   G.items.forEach(i=>{if(i.type!=='energo'||i.collected||G.escA)return;const g=(Math.sin(Date.now()*.006+i.z)+1)*.5;ctx.globalAlpha=0.65+g*.35;ctx.fillStyle=`rgb(0,${Math.floor(180+g*75)},140)`;const s=CX*.38;ctx.fillRect(i.x*CX-s/2,i.z*CZ-s/2,s,s);ctx.globalAlpha=1;});
   G.items.forEach(i=>{if(i.type!=='cross'||i.collected||G.escA)return;const g=(Math.sin(Date.now()*.005+i.x)+1)*.5;ctx.globalAlpha=0.7+g*.3;ctx.fillStyle=`rgb(80,${Math.floor(80+g*60)},255)`;const s=CX*.45;ctx.fillRect(i.x*CX-s/4,i.z*CZ-s/2,s/2,s);ctx.fillRect(i.x*CX-s/2,i.z*CZ-s/4,s,s/2);ctx.globalAlpha=1;});
+  // Шкафчики — синие квадраты на миникарте
+  if(!G.escA)G.items.forEach(i=>{if(i.type!=='locker')return;const g=(Math.sin(Date.now()*.004+i.x)+1)*.5;ctx.globalAlpha=0.55+g*.25;ctx.fillStyle=`rgb(40,${Math.floor(90+g*50)},${Math.floor(200+g*55)})`;const s=CX*.55;ctx.fillRect(i.x*CX-s/2,i.z*CZ-s/2,s,s);ctx.globalAlpha=1;});
   Object.values(G.players).forEach(p=>{if(p.id===myId)return;ctx.globalAlpha=.88;ctx.fillStyle=p.caught?'#880000':p.color;ctx.beginPath();ctx.arc(p.x*CX,p.z*CZ,CX*.55,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
   if(!G.M.banished&&!G.exitH&&!G.escA){ctx.fillStyle='rgba(255,60,0,.85)';ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(G.M.x*CX,G.M.z*CZ,CX*.7,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
   const mx=G.myP.x*CX,mz=G.myP.z*CZ;ctx.fillStyle='#fff';ctx.globalAlpha=.95;ctx.beginPath();ctx.arc(mx,mz,CX*.65,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(mx,mz);ctx.lineTo(mx+Math.sin(G.camY)*CX*2.2,mz+Math.cos(G.camY)*CZ*2.2);ctx.stroke();ctx.globalAlpha=1;ctx.strokeStyle='#1a3a12';ctx.lineWidth=1;ctx.strokeRect(0,0,MM,MM);
@@ -686,12 +785,45 @@ function hMsg(msg){
         if(G.players[p.id]){G.players[p.id].x=p.x;G.players[p.id].z=p.z;}
         if(p.id===myId&&G.myP){G.myP.x=p.x;G.myP.z=p.z;}
       });
+      // ИСПРАВЛЕНО: мишкан в конце коридора z=295
       G.M.x=32;G.M.z=295;
+      G.inLocker=false;G.lockerMgActive=false;stopLockerMg();
       document.getElementById('gi').style.display='none';
       runEsc();break;
+    case 'locker_entered':
+      G.inLocker=true;
+      // Заглушить ambient, добавить низкочастотный фильтр (имитируем через тихость)
+      if(AU.bg){AU.bg.volume=Math.max(0,(AU.bg.volume||0)*0.25);}
+      showBobik('🔵 '+t('lockerExit'));
+      break;
+    case 'locker_exited':
+      G.inLocker=false;G.lockerMgActive=false;
+      stopLockerMg();
+      if(AU.bg&&!G.exitH){bgV(0.04+Math.max(0,1-d2(G.myP,G.M)/22)*.76);}
+      break;
+    case 'locker_mishkan_dist':
+      if(G.inLocker){
+        if(msg.dist<2.5&&!G.lockerMgActive){
+          G.lockerMgActive=true;
+          startLockerMg();
+        }else if(msg.dist>=4&&G.lockerMgActive&&!G.lockerMgFailed){
+          // Мишкан ушёл — выиграли
+          G.lockerMgActive=false;
+          lockerMgSuccess();
+        }
+      }
+      break;
     case 'player_caught':
       if(!G.gameReady)break;
-      if(msg.playerId===myId){G.caught=true;tCaught();}
+      if(msg.playerId===myId){
+        G.caught=true;
+        if(msg.fromLocker){
+          G.inLocker=false;G.lockerMgActive=false;stopLockerMg();
+          runLockerFailCutscene();
+        } else {
+          tCaught();
+        }
+      }
       else{pAU('caught');showBobik(t('playerCaught',G.players[msg.playerId]?.name||t('defaultPlayer')));}
       if(G.players[msg.playerId])G.players[msg.playerId].caught=true;uHUD();break;
     case 'player_healed':
@@ -727,6 +859,13 @@ function d2(a,b){return Math.sqrt((a.x-b.x)**2+(a.z-b.z)**2);}
 function uMFX(){
   if(!G.myP||G.caught)return;
   const dist=d2(G.myP,G.M);
+  // В шкафчике — ambient очень тихий и "мыльный" (низкая громкость)
+  if(G.inLocker){
+    if(AU.bg)bgV(0.015+Math.max(0,1-dist/12)*.08); // очень тихо
+    const p=document.getElementById('op');
+    p.classList.remove('beat');
+    return;
+  }
   if(!G.M.banished&&!G.escA&&!G.exitH&&AU.bg){if(AU.bg.paused)AU.bg.play().catch(()=>{});bgV(.04+Math.max(0,1-dist/22)*.76);}
   if(G.exitH&&!G.escA&&AU.bg){if(AU.bg.paused)AU.bg.play().catch(()=>{});bgV(0.04);}
   if(G.M.banished&&AU.bg)AU.bg.volume=Math.max(0,(AU.bg.volume||0)-.02);
@@ -814,6 +953,197 @@ function useCross(){
   requestAnimationFrame(a);
 }
 
+// ══ LOCKER MINIGAME ══
+let LMG={active:false,timer:0,maxTimer:12,beatPos:0,beatDir:1,beatSpeed:0.9,windowL:0.38,windowW:0.22,misses:0,maxMisses:3,lastBeatTime:0,heartInterval:null,timerInterval:null,failed:false};
+
+function startLockerMg(){
+  if(LMG.active)return;
+  LMG.active=true;LMG.failed=false;LMG.misses=0;LMG.beatPos=0.5;LMG.beatDir=1;
+  LMG.timer=LMG.maxTimer;
+
+  document.getElementById('locker-title').textContent=t('lockerTitle');
+  document.getElementById('locker-mg').classList.add('active');
+  document.getElementById('locker-feedback').textContent='';
+
+  // Запустить звук сердцебиения
+  if(AU.heartbeat){AU.heartbeat.currentTime=0;AU.heartbeat.play().catch(()=>{});}
+
+  // Таймер мини-игры
+  LMG.timerInterval=setInterval(()=>{
+    LMG.timer-=0.1;
+    const fill=document.getElementById('locker-timer-fill');
+    if(fill)fill.style.width=Math.max(0,LMG.timer/LMG.maxTimer*100)+'%';
+    if(LMG.timer<=0){
+      // время вышло — провал
+      lockerMgFail();
+    }
+  },100);
+
+  // Анимация маркера сердцебиения (двигается туда-сюда)
+  LMG.heartInterval=setInterval(()=>{
+    if(!LMG.active)return;
+    const speed=LMG.beatSpeed+(LMG.misses*0.2);
+    LMG.beatPos+=LMG.beatDir*(speed*0.025);
+    if(LMG.beatPos>=0.92){LMG.beatPos=0.92;LMG.beatDir=-1;}
+    if(LMG.beatPos<=0.08){LMG.beatPos=0.08;LMG.beatDir=1;}
+    const marker=document.getElementById('locker-beat-marker');
+    const win=document.getElementById('locker-beat-window');
+    if(marker)marker.style.left=(LMG.beatPos*100)+'%';
+    // Окно зелёной зоны немного смещается случайно
+    const wL=0.35+Math.sin(Date.now()*0.001)*0.1;
+    if(win){win.style.left=(wL*100)+'%';win.style.width=(LMG.windowW*100)+'%';}
+    LMG.windowL=wL;
+  },25);
+}
+
+function lockerBeat(e){
+  if(e)e.preventDefault();
+  if(!LMG.active||LMG.failed)return;
+  // Проверить попадание маркера в окно
+  const inWindow=LMG.beatPos>=LMG.windowL&&LMG.beatPos<=(LMG.windowL+LMG.windowW);
+  const fb=document.getElementById('locker-feedback');
+  const btn=document.getElementById('locker-heart-btn');
+  const ripple=document.getElementById('locker-ripple');
+
+  // Анимация нажатия
+  if(btn){btn.classList.add('pressed');setTimeout(()=>btn.classList.remove('pressed'),120);}
+  if(ripple){ripple.classList.remove('ripple-anim');void ripple.offsetWidth;ripple.classList.add('ripple-anim');}
+
+  if(inWindow){
+    if(fb){fb.textContent=t('lockerBeatGood');fb.style.color='#44ff44';}
+    LMG.lastBeatTime=Date.now();
+    LMG.timer=Math.min(LMG.maxTimer,LMG.timer+1.5); // восстановить немного времени
+  } else {
+    LMG.misses++;
+    if(fb){fb.textContent=t('lockerBeatMiss');fb.style.color='#ff3333';}
+    // Красная вспышка
+    const mo=document.getElementById('locker-miss-overlay');
+    if(mo){mo.style.background='rgba(255,0,0,0.25)';setTimeout(()=>mo.style.background='rgba(255,0,0,0)',200);}
+    if(LMG.misses>=LMG.maxMisses){lockerMgFail();return;}
+  }
+}
+
+function lockerMgFail(){
+  if(LMG.failed)return;
+  LMG.failed=true;
+  stopLockerMg();
+  G.lockerMgActive=false;
+  G.inLocker=false;
+  send({type:'locker_minigame_fail'});
+  // Показать катсцену провала
+  runLockerFailCutscene();
+}
+
+function lockerMgSuccess(){
+  stopLockerMg();
+  G.lockerMgActive=false;
+  send({type:'locker_minigame_success'});
+  showBobik(t('lockerSurvived'));
+  // Плавно скрыть мини-игру
+  const mg=document.getElementById('locker-mg');
+  if(mg){mg.style.transition='opacity 0.8s';mg.style.opacity='0';setTimeout(()=>{mg.classList.remove('active');mg.style.opacity='1';mg.style.transition='';},800);}
+}
+
+function stopLockerMg(){
+  LMG.active=false;
+  clearInterval(LMG.timerInterval);clearInterval(LMG.heartInterval);
+  LMG.timerInterval=null;LMG.heartInterval=null;
+  if(AU.heartbeat){AU.heartbeat.pause();AU.heartbeat.currentTime=0;}
+  const mg=document.getElementById('locker-mg');
+  if(mg){mg.classList.remove('active');mg.style.opacity='1';mg.style.transition='';}
+  document.getElementById('locker-miss-overlay').style.background='rgba(255,0,0,0)';
+}
+
+// ══ LOCKER FAIL CUTSCENE ══
+function runLockerFailCutscene(){
+  const cs=document.getElementById('locker-cs');
+  const cv=document.getElementById('locker-cs-canvas');
+  cs.classList.add('active');
+  cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const ctx=cv.getContext('2d');
+  G.dis=true;
+
+  // Звук открытия двери
+  if(AU.lockerDoor){AU.lockerDoor.currentTime=0;AU.lockerDoor.play().catch(()=>{});}
+
+  let phase=0,pt=0;
+  let doorAngle=0; // дверь открывается
+  let camY=0,camP=0; // камера падает
+  let fallSpeed=0,fallY=0;
+  let shakeAmt=0;
+  let screamerShown=false;
+
+  function draw(){
+    pt+=0.016;
+    const W=cv.width,H=cv.height;
+    ctx.clearRect(0,0,W,H);
+
+    if(phase===0){
+      // Дверь шкафа открывается (0–2s)
+      doorAngle=Math.min(Math.PI*0.6,(pt/2)*Math.PI*0.6);
+      ctx.fillStyle='#050a05';ctx.fillRect(0,0,W,H);
+      // Имитируем вид изнутри шкафа — тёмные стенки
+      ctx.fillStyle='#0a0a18';ctx.fillRect(0,0,W,H);
+      // Щель двери — свет снаружи
+      const gapW=Math.min(W*0.7,W*0.7*(doorAngle/(Math.PI*0.6)));
+      const g=ctx.createLinearGradient(W/2-gapW/2,0,W/2+gapW/2,0);
+      g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(0.15,'rgba(40,60,20,0.7)');g.addColorStop(0.5,'rgba(60,80,30,0.9)');g.addColorStop(0.85,'rgba(40,60,20,0.7)');g.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=g;ctx.fillRect(W/2-gapW/2,0,gapW,H);
+      // Силуэт Мишкана в проёме при полном открытии
+      if(doorAngle>Math.PI*0.45){
+        const alpha=Math.min(1,(doorAngle-Math.PI*0.45)/(Math.PI*0.15));
+        ctx.save();ctx.globalAlpha=alpha;
+        if(mRdy&&mImg.complete){
+          const mh=H*0.85,mw=mh*(mImg.naturalWidth/Math.max(1,mImg.naturalHeight));
+          ctx.drawImage(mImg,W/2-mw/2,H*0.15,mw,mh);
+        }else{ctx.fillStyle='rgba(20,0,0,0.9)';ctx.beginPath();ctx.ellipse(W/2,H*0.3,W*0.12,H*0.22,0,0,Math.PI*2);ctx.fill();}
+        ctx.restore();
+      }
+      if(pt>2){phase=1;pt=0;}
+    } else if(phase===1){
+      // Камера "падает" на пол (1.5s)
+      fallSpeed+=pt*0.8;camP=Math.min(1.5,camP+fallSpeed*0.016);
+      shakeAmt=Math.max(0,(1-pt/1.5)*8);
+      ctx.save();
+      if(shakeAmt>0)ctx.translate((Math.random()-.5)*shakeAmt,(Math.random()-.5)*shakeAmt);
+      // Лес/комната наклонена вниз
+      const horizon=Math.floor(H*0.5+camP*H*0.5);
+      ctx.fillStyle='#020602';ctx.fillRect(0,0,W,horizon);
+      ctx.fillStyle='#0a140a';ctx.fillRect(0,horizon,W,H-horizon);
+      ctx.restore();
+      if(pt>1.5){phase=2;pt=0;
+        // Мишкан поднимает камеру — скример звук
+        if(AU.lockerScream){AU.lockerScream.currentTime=0;AU.lockerScream.play().catch(()=>{});}
+      }
+    } else if(phase===2){
+      // Мишкан крупным планом + скример (1.5s)
+      if(!screamerShown){screamerShown=true;}
+      const alpha=Math.min(1,pt/0.2);
+      ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+      ctx.save();ctx.globalAlpha=alpha;
+      const shake=(Math.random()-.5)*(1-pt/1.5)*15;
+      ctx.translate(shake,shake*0.5);
+      if(mRdy&&mImg.complete){
+        const scale=1+pt*0.3;
+        const mh=H*scale,mw=mh*(mImg.naturalWidth/Math.max(1,mImg.naturalHeight));
+        ctx.drawImage(mImg,W/2-mw/2,-H*0.05,mw,mh);
+      }else{
+        ctx.fillStyle='#ff0000';ctx.beginPath();ctx.arc(W/2,H*0.3,W*0.25+pt*30,0,Math.PI*2);ctx.fill();
+      }
+      ctx.restore();
+      if(pt>1.5){
+        // Катсцена завершена — показать caught UI
+        cs.classList.remove('active');
+        G.dis=false;
+        tCaught();
+        return;
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+}
+
 // ══ BOBIK MESSAGES ══
 let bobTO=null;
 function showBobik(m){const el=document.getElementById('bm');el.textContent=m;el.classList.add('show');clearTimeout(bobTO);bobTO=setTimeout(()=>el.classList.remove('show'),4500);}
@@ -884,12 +1214,17 @@ function loop(ts){
     const spd=(G.adr?1.3:1.0)*(G.sprint&&G.stamina>0?1.35:1.0)*2.8*dt*eB;
     const fx=Math.sin(G.camY),fz=Math.cos(G.camY),rx=Math.cos(G.camY),rz=-Math.sin(G.camY);
     let mx=0,mz=0;
-    if(G.keys.u){mx+=fx;mz+=fz;}if(G.keys.d){mx-=fx;mz-=fz;}
-    if(G.keys.l)G.camY+=2.2*dt;if(G.keys.r)G.camY-=2.2*dt;
-    if(Math.abs(G.jX)>.06||Math.abs(G.jZ)>.06){mx+=fx*(-G.jZ)+rx*G.jX;mz+=fz*(-G.jZ)+rz*G.jX;}
+    // Движение заблокировано в шкафчике
+    if(!G.inLocker){
+      if(G.keys.u){mx+=fx;mz+=fz;}if(G.keys.d){mx-=fx;mz-=fz;}
+      if(G.keys.l)G.camY+=2.2*dt;if(G.keys.r)G.camY-=2.2*dt;
+      if(Math.abs(G.jX)>.06||Math.abs(G.jZ)>.06){mx+=fx*(-G.jZ)+rx*G.jX;mz+=fz*(-G.jZ)+rz*G.jX;}
+    }
     const gcX=Math.abs(GP.ax[2])>.12?GP.ax[2]:0,gcY=Math.abs(GP.ax[3])>.12?GP.ax[3]:0;
     G.camY-=gcX*2.5*dt;G.camP-=gcY*1.8*dt;G.camP=Math.max(-.5,Math.min(.5,G.camP));
-    if(Math.abs(GP.ax[0])>.12||Math.abs(GP.ax[1])>.12){mx+=fx*(-GP.ax[1])+rx*GP.ax[0];mz+=fz*(-GP.ax[1])+rz*GP.ax[0];}
+    if(!G.inLocker){
+      if(Math.abs(GP.ax[0])>.12||Math.abs(GP.ax[1])>.12){mx+=fx*(-GP.ax[1])+rx*GP.ax[0];mz+=fz*(-GP.ax[1])+rz*GP.ax[0];}
+    }
     if(GP.btn[0])G.interact=true;if(GP.btn[4])G.sprint=true;if(GP.btn[2])useCross();
     const mov=mx!==0||mz!==0;
     if(mov){const len=Math.sqrt(mx*mx+mz*mz);const nx=G.myP.x+(mx/len)*spd,nz=G.myP.z+(mz/len)*spd;const bp=0.2;if(G.map[Math.floor(G.myP.z)]&&G.map[Math.floor(G.myP.z)][Math.floor(nx+(mx/len)*bp)]!==1)G.myP.x=nx;if(G.map[Math.floor(nz+(mz/len)*bp)]&&G.map[Math.floor(nz+(mz/len)*bp)][Math.floor(G.myP.x)]!==1)G.myP.z=nz;}
@@ -899,17 +1234,32 @@ function loop(ts){
     const tb=mov?(G.sprint||G.escP2?.09:.045):0;G.bAmt+=(tb-G.bAmt)*Math.min(1,10*dt);if(mov)G.bT+=dt*(G.sprint||G.escP2?9:5.5);
     if(mov){G.sT-=dt;if(G.sT<=0){step();G.sT=G.sprint||G.escP2?.26:.44;}}else G.sT=0;
     if(!G.escA)G.camP+=(Math.sin(G.bT)*G.bAmt*.25-G.camP*.01)*dt*4;
-    let ni=false,nd=null;G.items.forEach(i=>{if(!i.collected&&d2(G.myP,i)<1.3){ni=true;nd=i;}});
+    let ni=false,nd=null;G.items.forEach(i=>{
+      const dist=d2(G.myP,i);
+      if(i.type==='locker'){if(dist<1.4&&!G.inLocker){ni=true;nd=i;}}
+      else if(!i.collected&&dist<1.3){ni=true;nd=i;}
+    });
+    if(G.inLocker){ni=true;nd={type:'locker_exit'};}
     const niEl=document.getElementById('ni');
-    niEl.style.display=ni?'block':'none';
-    if(ni)niEl.textContent=nd.type==='page'?t('niTakePage'):nd.type==='energo'?t('niTakeEnergy'):t('niTakeCross');
-    const ep=G.escA?EXIT_N:{x:17.5,z:0.7};
+    niEl.style.display=(ni&&!G.lockerMgActive)?'block':'none';
+    if(ni&&nd){
+      if(nd.type==='locker')niEl.textContent=t('lockerHide');
+      else if(nd.type==='locker_exit')niEl.textContent=t('lockerExit');
+      else if(nd.type==='page')niEl.textContent=t('niTakePage');
+      else if(nd.type==='energo')niEl.textContent=t('niTakeEnergy');
+      else niEl.textContent=t('niTakeCross');
+    }
+    const ep=G.escA?EXIT_N:{x:32,z:0.7};
     document.getElementById('xi').style.display=(G.allP&&!G.exitH&&d2(G.myP,ep)<2.5)||(G.escA&&d2(G.myP,ep)<2.5)?'block':'none';
     document.getElementById('xi').textContent=t('xiExit');
-    if(G.interact)Object.values(G.players).forEach(p=>{if(p.caught&&p.id!==myId&&d2(G.myP,p)<2.5)send({type:'heal_player',targetId:p.id});});
+    if(G.interact&&!G.inLocker)Object.values(G.players).forEach(p=>{if(p.caught&&p.id!==myId&&d2(G.myP,p)<2.5)send({type:'heal_player',targetId:p.id});});
     const tgt=G.exitH&&!G.escA?GATHER:ep;const ex=tgt.x-G.myP.x,ez=tgt.z-G.myP.z;let df=Math.atan2(ex,ez)-G.camY;while(df>Math.PI)df-=Math.PI*2;while(df<-Math.PI)df+=Math.PI*2;
     const arr=document.getElementById('xa');
     if((G.exitH||G.allP)&&Math.abs(df)>.35){arr.textContent=`${G.escA?t('exitDir'):t('gatherDir')} ${df>0?'◀':'▶'} ${Math.abs(Math.round(df*180/Math.PI))}°`;arr.style.display='block';}else arr.style.display='none';
+    // Визуальный эффект нахождения в шкафчике — тёмная виньетка по краям и синеватый оттенок
+    const lockerOverlay=document.getElementById('ob');
+    if(G.inLocker){lockerOverlay.style.background='rgba(0,20,80,0.35)';}
+    else if(!G.escA){lockerOverlay.style.background='rgba(20,20,220,0)';}
   }else if(G.stun){G.stunT-=dt;if(G.stunT<=0)G.stun=false;}
   else if(G.caught){
     G.camP=Math.sin(ts*.0008)*.08-.12;
