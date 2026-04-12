@@ -623,7 +623,7 @@ function startGame(){send({type:'start_game'});}
 function uLobby(pl){const el=document.getElementById('lobby-players');el.innerHTML='';pl.forEach(p=>{const d=document.createElement('div');d.className='lp';d.innerHTML=`<div class="pdot" style="background:${p.color}"></div><span>${p.name}</span>`;el.appendChild(d);});}
 
 // ══ STATE ══
-const G={map:null,MS:64,items:[],players:{},M:{x:22,z:16,angle:0,banished:false},myP:null,caught:false,stamina:100,sprint:false,adr:false,adrT:0,keys:{u:false,d:false,l:false,r:false},jX:0,jZ:0,interact:false,pages:0,allP:false,exitH:false,camY:Math.PI,camP:0,bT:0,bAmt:0,sT:0,sX:0,sY:0,dis:false,escA:false,escP2:false,fO:[],stun:false,stunT:0,hasCr:false,crU:false,crA:0,mBan:false,mBanT:0,mRise:0,monIv:null,fallIv:null,gameReady:false,inLocker:false,lockerMgActive:false};
+const G={map:null,MS:64,items:[],players:{},M:{x:22,z:16,angle:0,banished:false},myP:null,caught:false,stamina:100,sprint:false,adr:false,adrT:0,keys:{u:false,d:false,l:false,r:false},jX:0,jZ:0,interact:false,pages:0,allP:false,exitH:false,camY:Math.PI,camP:0,bT:0,bAmt:0,sT:0,sX:0,sY:0,dis:false,escA:false,escP2:false,fO:[],stun:false,stunT:0,hasCr:false,crU:false,crA:0,mBan:false,mBanT:0,mRise:0,monIv:null,fallIv:null,gameReady:false,inLocker:false,lockerMgActive:false,interactCooldown:0};
 const GATHER={x:24.5,z:31},EXIT_N={x:32,z:1.5},MS={x:22,z:16};
 
 // ══ RAYCASTER ══
@@ -800,7 +800,9 @@ function hMsg(msg){
       runEsc();break;
     case 'locker_entered':
       G.inLocker=true;
-      // Заглушить ambient, добавить низкочастотный фильтр (имитируем через тихость)
+      G.interact=false; // сбросить немедленно чтобы не выйти сразу
+      G.interactCooldown=800; // 800мс cooldown перед возможностью выйти
+      // Заглушить ambient
       if(AU.bg){AU.bg.volume=Math.max(0,(AU.bg.volume||0)*0.25);}
       showBobik('🔵 '+t('lockerExit'));
       break;
@@ -1300,17 +1302,26 @@ function loop(ts){
       else if(nd.type==='energo')niEl.textContent=t('niTakeEnergy');
       else niEl.textContent=t('niTakeCross');
     }
+    // Cooldown для interact (не выходить из шкафчика сразу после входа)
+    if(G.interactCooldown>0){G.interactCooldown-=dt*1000;if(G.interactCooldown<0)G.interactCooldown=0;}
+    const canInteract=G.interact&&G.interactCooldown<=0;
+    // Выход из шкафчика — только если кулдаун прошёл и нет мини-игры
+    if(canInteract&&G.inLocker&&!G.lockerMgActive){
+      G.interact=false;
+      send({type:'player_move',x:G.myP.x,z:G.myP.z,angle:G.camY,sprint:false,interact:true});
+    }
+    // Лечение других игроков
+    if(canInteract&&!G.inLocker)Object.values(G.players).forEach(p=>{if(p.caught&&p.id!==myId&&d2(G.myP,p)<2.5)send({type:'heal_player',targetId:p.id});});
     const ep=G.escA?EXIT_N:{x:32,z:0.7};
     document.getElementById('xi').style.display=(G.allP&&!G.exitH&&d2(G.myP,ep)<2.5)||(G.escA&&d2(G.myP,ep)<2.5)?'block':'none';
     document.getElementById('xi').textContent=t('xiExit');
-    if(G.interact&&!G.inLocker)Object.values(G.players).forEach(p=>{if(p.caught&&p.id!==myId&&d2(G.myP,p)<2.5)send({type:'heal_player',targetId:p.id});});
     const tgt=G.exitH&&!G.escA?GATHER:ep;const ex=tgt.x-G.myP.x,ez=tgt.z-G.myP.z;let df=Math.atan2(ex,ez)-G.camY;while(df>Math.PI)df-=Math.PI*2;while(df<-Math.PI)df+=Math.PI*2;
     const arr=document.getElementById('xa');
     if((G.exitH||G.allP)&&Math.abs(df)>.35){arr.textContent=`${G.escA?t('exitDir'):t('gatherDir')} ${df>0?'◀':'▶'} ${Math.abs(Math.round(df*180/Math.PI))}°`;arr.style.display='block';}else arr.style.display='none';
-    // Визуальный эффект нахождения в шкафчике — тёмная виньетка по краям и синеватый оттенок
+    // Визуальный эффект нахождения в шкафчике — тёмная синяя виньетка
     const lockerOverlay=document.getElementById('ob');
     if(G.inLocker){lockerOverlay.style.background='rgba(0,20,80,0.35)';}
-    else if(!G.escA){lockerOverlay.style.background='rgba(20,20,220,0)';}
+    else if(!G.escA){lockerOverlay.style.background='rgba(20,20,220,0.0';}
   }else if(G.stun){G.stunT-=dt;if(G.stunT<=0)G.stun=false;}
   else if(G.caught){
     G.camP=Math.sin(ts*.0008)*.08-.12;
@@ -1324,7 +1335,13 @@ function loop(ts){
 
   render();rMM();
   const now=performance.now();
-  if(now-lSend>50){lSend=now;send({type:'player_move',x:G.myP.x,z:G.myP.z,angle:G.camY,sprint:G.sprint||G.escP2,interact:G.interact});G.interact=false;}
+  if(now-lSend>50){
+    lSend=now;
+    // Не посылать interact серверу пока в шкафчике (обрабатывается отдельно выше)
+    const sendInteract=G.interact&&!G.inLocker&&G.interactCooldown<=0;
+    send({type:'player_move',x:G.myP.x,z:G.myP.z,angle:G.camY,sprint:G.sprint||G.escP2,interact:sendInteract});
+    if(sendInteract)G.interact=false;
+  }
   bobT-=dt;if(bobT<=0){bobT=28+Math.random()*22;if(Math.random()<.3)showBobik(t('bobikTips')[Math.floor(Math.random()*t('bobikTips').length)]);}}
 
 
