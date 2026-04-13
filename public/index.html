@@ -661,8 +661,8 @@ function step(){if(!actx)return;const b=actx.createBuffer(1,Math.floor(actx.samp
 function pAU(k){if(!AU[k])return;AU[k].currentTime=0;AU[k].play().catch(()=>{});}
 function bgV(v){if(AU.bg)AU.bg.volume=Math.max(0,Math.min(1,v));}
 
-const mImg=new Image();mImg.src='https://image2url.com/r2/default/files/1775836257784-db975cda-b278-4e12-9602-b14167efe0f7.jpg';
-let mRdy=false;mImg.onload=()=>mRdy=true;
+const mImg=new Image();mImg.crossOrigin='anonymous';mImg.src='https://image2url.com/r2/default/files/1775836257784-db975cda-b278-4e12-9602-b14167efe0f7.jpg';
+let mRdy=false;mImg.onload=()=>mRdy=true;mImg.onerror=()=>{mRdy=false;};
 
 // ══ WS ══
 let ws=null,myId=null,isHost=false;
@@ -903,7 +903,6 @@ const _hc={};function hRGB(h){if(_hc[h])return _hc[h];return _hc[h]=[parseInt(h.
 // ══ LOCKER SLITS ══
 function drawLockerSlits(){
   const ctx=RX,W=RW,H=RH;
-  // Save the rendered world pixels temporarily, draw black, restore slits
   const slitH=Math.max(28,Math.floor(H*0.065));
   const slit1Y=Math.floor(H*0.38);
   const slit2Y=Math.floor(H*0.52);
@@ -912,13 +911,15 @@ function drawLockerSlits(){
   const r2=slitH/2;
   // Capture slit regions BEFORE drawing black
   let imgData1=null,imgData2=null;
-  try{imgData1=ctx.getImageData(slitX,slit1Y,slitW,slitH);}catch(e){}
-  try{imgData2=ctx.getImageData(slitX,slit2Y,slitW,slitH);}catch(e){}
+  try{imgData1=ctx.getImageData(slitX,slit1Y,slitW,slitH);}catch(e){/* canvas tainted — skip getImageData */}
+  try{imgData2=ctx.getImageData(slitX,slit2Y,slitW,slitH);}catch(e){/* canvas tainted */}
   // Draw full black
   ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
-  // Restore slit pixels
-  if(imgData1)ctx.putImageData(imgData1,slitX,slit1Y);
-  if(imgData2)ctx.putImageData(imgData2,slitX,slit2Y);
+  // Restore slit pixels (or draw dark green tint if tainted)
+  if(imgData1){ctx.putImageData(imgData1,slitX,slit1Y);}
+  else{ctx.fillStyle='#0a120a';ctx.fillRect(slitX,slit1Y,slitW,slitH);}
+  if(imgData2){ctx.putImageData(imgData2,slitX,slit2Y);}
+  else{ctx.fillStyle='#0a120a';ctx.fillRect(slitX,slit2Y,slitW,slitH);}
   // Frame/border around slits
   ctx.strokeStyle='rgba(60,60,70,0.9)';ctx.lineWidth=3;
   [slit1Y,slit2Y].forEach(sy=>{
@@ -1024,7 +1025,7 @@ function hMsg(msg){
         if(msg.dist<2.5&&!G.lockerMgActive){
           G.lockerMgActive=true;
           startLockerMg();
-        }else if(msg.dist>=4&&G.lockerMgActive&&!G.lockerMgFailed){
+        }else if(msg.dist>=4&&G.lockerMgActive&&!LMG.failed){
           // Мишкан ушёл — выиграли
           G.lockerMgActive=false;
           lockerMgSuccess();
@@ -1706,7 +1707,7 @@ function loop(ts){
     if((G.exitH||G.allP)&&Math.abs(df)>.35){arr.textContent=`${G.escA?t('exitDir'):t('gatherDir')} ${df>0?'◀':'▶'} ${Math.abs(Math.round(df*180/Math.PI))}°`;arr.style.display='block';}else arr.style.display='none';
     const lockerOverlay=document.getElementById('ob');
     if(G.inLocker){lockerOverlay.style.background='rgba(0,0,0,0)';}
-    else if(!G.escA){lockerOverlay.style.background='rgba(20,20,220,0.0';}
+    else if(!G.escA){lockerOverlay.style.background='rgba(20,20,220,0.0)';}
   }else if(G.stun){G.stunT-=dt;if(G.stunT<=0)G.stun=false;}
   else if(G.caught){
     G.camP=Math.sin(ts*.0008)*.08-.12;
@@ -1731,7 +1732,7 @@ function loop(ts){
     send({type:'player_move',x:G.myP.x,z:G.myP.z,angle:G.camY,sprint:G.sprint||G.escP2,interact:sendInteract});
     if(sendInteract)G.interact=false;
   }
-  bobT-=dt;if(bobT<=0){bobT=22+Math.random()*18;const _tips=t('bobikTips');const _d2m=G.myP?d2(G.myP,G.M):99;const _pl=25-G.pages;let _tip=null;if(_d2m<10&&_d2m>4&&Math.random()<0.5){const _ct=['Я чую его... ОН РЯДОМ! Беги!','Осторожно! Мишкан в этом секторе!','Стоп! Не иди туда — он там!'];_tip=_ct[Math.floor(Math.random()*_ct.length)];}else if(_pl<=5&&_pl>0&&Math.random()<0.4){_tip='Осталось '+_pl+' страниц! Почти свободен!';}else if(G.exitH&&Math.random()<0.5){_tip='ВСЕ СТРАНИЦЫ! БЕГИ К ЖЁЛТОЙ ЗОНЕ!';}else if(G.hasCr&&Math.random()<0.3){_tip='Крест! Нажми G рядом с Мишканом!';}else{_tip=_tips[Math.floor(Math.random()*_tips.length)];}if(_tip)showBobik('🐾 '+_tip);}}
+  bobT-=dt;if(bobT<=0){bobT=22+Math.random()*18;const _tips=t('bobikTips');const _d2m=G.myP?d2(G.myP,G.M):99;const _pl=25-G.pages;let _tip=null;if(_d2m<10&&_d2m>4&&Math.random()<0.5){const _ct=LANG==='ru'?['Я чую его... ОН РЯДОМ! Беги!','Осторожно! Мишкан в этом секторе!','Стоп! Не иди туда — он там!']:['Ich spüre ihn... ER IST NASS! Lauf!','Vorsicht! Mishkan ist in diesem Bereich!','Stopp! Geh nicht dort hin — er ist da!'];_tip=_ct[Math.floor(Math.random()*_ct.length)];}else if(_pl<=5&&_pl>0&&Math.random()<0.4){_tip=LANG==='ru'?'Осталось '+_pl+' страниц! Почти свободен!':'Noch '+_pl+' Seiten! Fast frei!';}else if(G.exitH&&Math.random()<0.5){_tip=LANG==='ru'?'ВСЕ СТРАНИЦЫ! БЕГИ К ЖЁЛТОЙ ЗОНЕ!':'ALLE SEITEN! LAUF ZUR GELBEN ZONE!';}else if(G.hasCr&&Math.random()<0.3){_tip=LANG==='ru'?'Крест! Нажми G рядом с Мишканом!':'Kreuz! Drücke G neben Mishkan!';}else{_tip=_tips[Math.floor(Math.random()*_tips.length)];}if(_tip)showBobik('🐾 '+_tip);}}
 
 
 // ═══════════════════════════════════════════════
@@ -1758,6 +1759,7 @@ PAU.ambient.loop = true; PAU.ambient.volume = 0.45;
 PAU.car1.volume = 0.9; PAU.car2.volume = 0.9; PAU.bang.volume = 1.0; PAU.door.volume = 1.0;
 
 PRE.bobikImg = new Image();
+PRE.bobikImg.crossOrigin = 'anonymous';
 PRE.bobikImg.src = 'https://image2url.com/r2/default/files/1775924038619-68e5dcea-f1ec-4fa3-9e3d-367710ca0e82.png';
 
 // ─── PHASE 1: ROOM ───
@@ -2368,7 +2370,7 @@ function runPageFoundCS(pageNum){
   cv.width=window.innerWidth;cv.height=window.innerHeight;
   const ctx=cv.getContext('2d');
   cs.style.display='block';txt.style.opacity='1';
-  txt.innerHTML='📄 СТРАНИЦА '+pageNum+'/25';
+  txt.innerHTML=(LANG==='ru'?'📄 СТРАНИЦА ':'📄 SEITE ')+pageNum+'/25';
   let _t=0;
   const _pts=[];
   for(let i=0;i<30;i++)_pts.push({x:window.innerWidth/2+(Math.random()-.5)*200,y:window.innerHeight*.4+(Math.random()-.5)*100,vx:(Math.random()-.5)*4,vy:-2-Math.random()*3,life:1,r:Math.floor(Math.random()*50+200),g:Math.floor(Math.random()*80+140)});
@@ -2386,8 +2388,8 @@ function runAllPagesCS(cb){
   const ctx=cv.getContext('2d');
   const l1=document.getElementById('allpages-line1');
   const l2=document.getElementById('allpages-line2');
-  if(l1)l1.textContent='ВСЕ СТРАНИЦЫ НАЙДЕНЫ!';
-  if(l2)l2.textContent='Мишкан изгнан... пока. Бегите к жёлтой зоне!';
+  if(l1)l1.textContent=LANG==='ru'?'ВСЕ СТРАНИЦЫ НАЙДЕНЫ!':'ALLE SEITEN GEFUNDEN!';
+  if(l2)l2.textContent=LANG==='ru'?'Мишкан изгнан... пока. Бегите к жёлтой зоне!':'Mishkan verbannt... vorerst. Lauft zur gelben Zone!';
   let _t2=0;
   const _stars=[];
   for(let i=0;i<80;i++)_stars.push({x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*2+0.5,sp:0.3+Math.random()*0.7});
@@ -2407,7 +2409,7 @@ function runMishkanSpottedCS(){
   cv.width=window.innerWidth;cv.height=window.innerHeight;
   const ctx=cv.getContext('2d');
   let _t3=0;
-  const _draw3=()=>{_t3+=0.016;ctx.clearRect(0,0,cv.width,cv.height);const _a=Math.max(0,0.5-_t3*0.5)*Math.abs(Math.sin(_t3*12));const _vg=ctx.createRadialGradient(cv.width/2,cv.height/2,0,cv.width/2,cv.height/2,cv.width*0.7);_vg.addColorStop(0,'rgba(255,0,0,0)');_vg.addColorStop(1,'rgba(200,0,0,'+_a+')');ctx.fillStyle=_vg;ctx.fillRect(0,0,cv.width,cv.height);if(_t3<0.8){ctx.save();ctx.globalAlpha=Math.min(1,_t3*5)*(1-_t3/0.8);ctx.font='bold '+Math.floor(cv.height*0.07)+'px Creepster,cursive';ctx.fillStyle='#ff2020';ctx.textAlign='center';ctx.shadowColor='#ff0000';ctx.shadowBlur=30;ctx.fillText('⚠ МИШКАН РЯДОМ ⚠',cv.width/2,cv.height*0.3);ctx.restore();}if(_t3<1.0)requestAnimationFrame(_draw3);else{cs.style.display='none';_spotActive=false;}};
+  const _draw3=()=>{_t3+=0.016;ctx.clearRect(0,0,cv.width,cv.height);const _a=Math.max(0,0.5-_t3*0.5)*Math.abs(Math.sin(_t3*12));const _vg=ctx.createRadialGradient(cv.width/2,cv.height/2,0,cv.width/2,cv.height/2,cv.width*0.7);_vg.addColorStop(0,'rgba(255,0,0,0)');_vg.addColorStop(1,'rgba(200,0,0,'+_a+')');ctx.fillStyle=_vg;ctx.fillRect(0,0,cv.width,cv.height);if(_t3<0.8){ctx.save();ctx.globalAlpha=Math.min(1,_t3*5)*(1-_t3/0.8);ctx.font='bold '+Math.floor(cv.height*0.07)+'px Creepster,cursive';ctx.fillStyle='#ff2020';ctx.textAlign='center';ctx.shadowColor='#ff0000';ctx.shadowBlur=30;ctx.fillText(LANG==='ru'?'⚠ МИШКАН РЯДОМ ⚠':'⚠ MISHKAN IN DER NÄHE ⚠',cv.width/2,cv.height*0.3);ctx.restore();}if(_t3<1.0)requestAnimationFrame(_draw3);else{cs.style.display='none';_spotActive=false;}};
   requestAnimationFrame(_draw3);
   setTimeout(()=>{cs.style.display='none';_spotActive=false;},1200);
 }
