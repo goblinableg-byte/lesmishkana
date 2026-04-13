@@ -743,8 +743,19 @@ function tickBobikExit(dt){
 // ══ RAYCASTER ══
 let RC=null,RX=null,RW=0,RH=0;
 let FOV=Math.PI/2.5;
-function iRC(){RC=document.getElementById('game-canvas');RX=RC.getContext('2d');rsz();window.addEventListener('resize',rsz);}
-function rsz(){RW=window.innerWidth;RH=window.innerHeight;RC.width=RW;RC.height=RH;}
+function iRC(){
+  RC=document.getElementById('game-canvas');
+  RW=window.innerWidth;RH=window.innerHeight;
+  RC.width=RW;RC.height=RH;
+  RX=RC.getContext('2d',{willReadFrequently:true});
+  window.addEventListener('resize',rsz);
+}
+function rsz(){
+  if(!RC)return;
+  RW=window.innerWidth;RH=window.innerHeight;
+  RC.width=RW;RC.height=RH;
+  // Context object stays valid after resize — no need to re-get
+}
 
 function wCol(side,dist,hx,hz,px,pz,ra){
   const f=Math.max(0.04,1-dist/35);
@@ -757,7 +768,7 @@ function wCol(side,dist,hx,hz,px,pz,ra){
 }
 
 function render(){
-  if(!G.myP||!G.map)return;
+  if(!G.myP||!G.map||!RX)return;
   const ctx=RX,W=RW,H=RH,px=G.myP.x,pz=G.myP.z,yaw=G.camY,pitch=G.camP;
   const horizon=Math.floor(H/2+pitch*H*0.5);
   const SZ=G.map.length,SX=G.map[0]?G.map[0].length:G.map.length;if(SZ===0||SX===0)return;
@@ -1507,6 +1518,8 @@ function iHands(){
 }
 
 function drawHand(ctx,W,H,side,item,bobY,alpha){
+  const skin='rgba(210,170,130,1)';
+  const sleeve='rgba(55,65,80,1)';
   ctx.save();
   ctx.globalAlpha=alpha||1;
   const isR=side==='right';
@@ -1629,15 +1642,20 @@ function renderHands(dt){
 let lSend=0,bobT=30,lId=null,lTS=performance.now();
 
 function startGC(){G.gameReady=true;send({type:'game_ready'});Object.values(PAU).forEach(a=>{try{a.pause();a.currentTime=0;}catch(e){}});
-  if(!document.fullscreenElement&&/Android|iPhone/i.test(navigator.userAgent))document.documentElement.requestFullscreen().catch(()=>{});
   showScreen('screen-game');
   document.getElementById('inv').style.display='flex';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  const doInit=()=>{
     iRC();iMM();bPHUD();iCtrl();iHands();
     AU.bg?.play().catch(()=>{});
     showBobik(t('bobikGreet'));
     startGrace();if(lId!==null)cancelAnimationFrame(lId);lId=requestAnimationFrame(loop);
-  }));
+  };
+  if(!document.fullscreenElement&&/Android|iPhone|iPad/i.test(navigator.userAgent)){
+    document.documentElement.requestFullscreen().catch(()=>{});
+    setTimeout(doInit,350);
+  } else {
+    requestAnimationFrame(()=>requestAnimationFrame(doInit));
+  }
 }
 function bPHUD(){const el=document.getElementById('hud-pg');el.innerHTML='';for(let i=0;i<25;i++){const d=document.createElement('div');d.className='pi';d.textContent='📄';el.appendChild(d);}}
 function startGrace(){let t2=8;const el=document.getElementById('gt');el.textContent=t('graceWarning',t2);el.classList.add('show');const iv=setInterval(()=>{t2--;if(t2<=0){el.classList.remove('show');clearInterval(iv);}else el.textContent=t('graceWarning',t2);},1000);}
