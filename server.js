@@ -247,8 +247,7 @@ function startLoop(code){
       }
     }
     if(gs.escapeActive&&gs.escapeStart){const el=(Date.now()-gs.escapeStart)/1000;if(el>101){gs.players.forEach(p=>{if(!p.caught&&p.z>3){p.caught=true;bcast(code,{type:'player_caught',playerId:p.id});}});gs.phase='escape_ended';}}
-    bcast(code,{type:'game_state',mishkan:{x:gs.mishkan.x,z:gs.mishkan.z,angle:gs.mishkan.angle,state:gs.mishkan.state,banished:gs.mishkan.banished,phase:gs.mishkan.phase||1},players:gs.players.map(p=>({id:p.id,name:p.name,x:p.x,z:p.z,angle:p.angle,caught:p.caught,hp:p.hp,color:p.color,hidingLockerId:p.hidingLockerId||null,altarT:p.altarT||0})),items:gs.items,escapeActive:gs.escapeActive||false,allPagesCollected:gs.allPagesCollected||false,altarCharges:gs.altarCharges||0,mishkanPhase:gs.mishkan.phase||1});
-    if(gs.escapeActive)gs.players.filter(p=>!p.caught).forEach(p=>{if(p.z<3){gs.phase='won';bcast(code,{type:'game_won'});}});
+    if(gs.escapeActive&&gs.phase==='playing'){const escaped=gs.players.filter(p=>!p.caught&&p.z<3);if(escaped.length>0&&!gs.gameWonSent){gs.gameWonSent=true;gs.phase='won';bcast(code,{type:'game_won'});}}
     if(gs.prePhaseDone&&gs.players.length>0&&gs.players.every(p=>p.caught)&&gs.phase==='playing'){gs.phase='lost';bcast(code,{type:'game_lost'});}
   },50);
 }
