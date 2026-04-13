@@ -8,6 +8,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Creepster&family=VT323&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#000;overflow:hidden;width:100vw;height:100vh;font-family:'VT323',monospace;color:#c8d8b0;user-select:none;-webkit-user-select:none;}
+@keyframes catchShake{0%{transform:translate(0,0);}10%{transform:translate(-12px,8px) rotate(-1.5deg);}20%{transform:translate(12px,-8px) rotate(1.5deg);}50%{transform:translate(-4px,3px);}100%{transform:translate(0,0);}}
+#screen-game.shake{animation:catchShake 0.6s ease-out;}
 .screen{display:none;width:100%;height:100%;position:fixed;top:0;left:0;z-index:1;}
 .screen.active{display:flex;flex-direction:column;align-items:center;justify-content:center;}
 #screen-game.active{display:block!important;}
@@ -266,6 +268,31 @@ input.inp:focus{border-color:#ff3030;}
 <!-- RUNNING HANDS -->
 <canvas id="run-hands"></canvas>
 
+<!-- CATCH CUTSCENE -->
+<div id="catch-cs" style="position:fixed;inset:0;z-index:92;display:none;pointer-events:none;">
+  <canvas id="catch-cs-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;"></canvas>
+</div>
+<!-- END GAME CUTSCENE -->
+<div id="endcs" style="position:fixed;inset:0;z-index:199;display:none;pointer-events:none;">
+  <canvas id="endcs-canvas" style="width:100%;height:100%;display:block;"></canvas>
+</div>
+<!-- PAGE FOUND CUTSCENE -->
+<div id="page-cs" style="position:fixed;inset:0;z-index:90;display:none;pointer-events:none;">
+  <canvas id="page-cs-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;"></canvas>
+  <div id="page-cs-text" style="position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);font-family:Creepster,cursive;font-size:2.5rem;color:#f0c030;text-shadow:0 0 30px #f0c03088;text-align:center;opacity:0;pointer-events:none;"></div>
+</div>
+<!-- ALL PAGES CUTSCENE -->
+<div id="allpages-cs" style="position:fixed;inset:0;z-index:95;display:none;background:#000;overflow:hidden;">
+  <canvas id="allpages-canvas" style="width:100%;height:100%;display:block;"></canvas>
+  <div id="allpages-text" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;">
+    <div style="font-family:Creepster,cursive;font-size:clamp(2rem,8vw,4rem);color:#f0c030;text-shadow:0 0 40px #f0c030;letter-spacing:4px;" id="allpages-line1"></div>
+    <div style="font-family:VT323,monospace;font-size:1.3rem;color:#80ff80;margin-top:1rem;letter-spacing:2px;" id="allpages-line2"></div>
+  </div>
+</div>
+<!-- MISHKAN SPOTTED CUTSCENE -->
+<div id="spot-cs" style="position:fixed;inset:0;z-index:88;display:none;pointer-events:none;">
+  <canvas id="spot-cs-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;"></canvas>
+</div>
 <div id="screen-end" class="screen">
   <h1 id="et2"></h1><p id="em"></p>
   <button class="btn" id="btn-menu" onclick="location.reload()"></button>
@@ -398,7 +425,7 @@ const T = {
     bobD7: 'Бобик: "КТО ВЫБЕРЕТСЯ — ТОТ УЙДЁТ. ОСТАЛЬНЫЕ НЕ НА МОЕЙ ВИНЕ"',
     bobD8: 'Бобик: "А так — я вам помогу найти моего друга и избавить его от проклятия"',
     bobD9: (n) => `${n}: "Спасибо, Бобик!"`,
-    bobikTips: ['Тихо... я его чувствую.','Мишкан не злой. Просто одинокий.','Страницы видны на карте!','Энергос помогает убежать!','Синие шкафчики спасают жизнь!'],
+    bobikTips: ['Тихо... я его чувствую.','Мишкан не злой. Просто одинокий.','Страницы видны на карте!','Энергос помогает убежать!','Синие шкафчики спасают жизнь!','Вместе легче выжить!','Я слышу его шаги... он близко.','Алтарь в центре — используй его!','Крест замедлит Мишкана!','Не спринтуй рядом с ним!','Он чует страх... дыши тихо.','Ищи энергосы для скорости!'],
     langBtn: '🌐 DE',
     youSuffix: ' (ты)',
     defaultPlayer: 'Игрок',
@@ -502,7 +529,7 @@ const T = {
     bobD7: 'Bobik: "WER ENTKOMMEN WIRD — DER GEHT. DIE ANDEREN SIND NICHT MEINE SCHULD"',
     bobD8: 'Bobik: "Jedenfalls — ich helfe euch meinen Freund zu finden und ihn vom Fluch zu befreien"',
     bobD9: (n) => `${n}: "Danke, Bobik!"`,
-    bobikTips: ['Leise... ich spüre ihn.','Mishkan ist nicht böse. Nur einsam.','Seiten sind auf der Karte sichtbar!','Energo hilft zu fliehen!','Blaue Schränke retten dein Leben!'],
+    bobikTips: ['Leise... ich spüre ihn.','Mishkan ist nicht böse. Nur einsam.','Seiten sind auf der Karte sichtbar!','Energo hilft zu fliehen!','Blaue Schränke retten dein Leben!','Zusammen laufen ist sicherer!','Ich höre seine Schritte... er ist nah.','Das Kreuz verlangsamt Mishkan!','Nicht sprinten wenn Mishkan nah ist!','Er riecht Angst... atme ruhig.','Suche Energo für Geschwindigkeit!'],
     langBtn: '🌐 RU',
     youSuffix: ' (du)',
     defaultPlayer: 'Spieler',
@@ -733,9 +760,11 @@ function render(){
   if(!G.myP||!G.map)return;
   const ctx=RX,W=RW,H=RH,px=G.myP.x,pz=G.myP.z,yaw=G.camY,pitch=G.camP;
   const horizon=Math.floor(H/2+pitch*H*0.5);
-  const SZ=G.map.length,SX=G.map[0]?G.map[0].length:G.map.length;
+  const SZ=G.map.length,SX=G.map[0]?G.map[0].length:G.map.length;if(SZ===0||SX===0)return;
   ctx.save();if(G.sX||G.sY)ctx.translate(G.sX,G.sY);
-  ctx.fillStyle='#010501';ctx.fillRect(0,0,W,Math.max(0,horizon));
+  // Night forest sky with moon
+  const forestSky=ctx.createLinearGradient(0,0,0,Math.max(1,horizon));forestSky.addColorStop(0,'#010108');forestSky.addColorStop(1,'#020502');ctx.fillStyle=forestSky;ctx.fillRect(0,0,W,Math.max(0,horizon));
+  if(horizon>20){const moonX=W*0.75,moonY=Math.max(12,horizon*0.25);ctx.fillStyle='rgba(220,235,255,0.65)';ctx.beginPath();ctx.arc(moonX,moonY,Math.max(8,horizon*0.05),0,Math.PI*2);ctx.fill();for(let si=0;si<15;si++){const sx2=(si*97.3+G.bT*2)%W,sy2=(si*53.1)%(horizon*0.8);ctx.globalAlpha=0.35+Math.sin(G.bT*2+si)*0.25;ctx.fillStyle='#fff';ctx.fillRect(sx2,sy2,1,1);}ctx.globalAlpha=1;}
   const fg=ctx.createLinearGradient(0,horizon,0,H);fg.addColorStop(0,'#0c180a');fg.addColorStop(1,'#030603');ctx.fillStyle=fg;ctx.fillRect(0,Math.max(0,horizon),W,H);
   const hf=FOV/2,zB=new Float32Array(W);
   for(let col=0;col<W;col++){
@@ -773,8 +802,9 @@ function render(){
     const rY=sp.t==='mishkan'?(sp.d.rY||0):0;
     const rOff=rY<0?Math.floor(-rY*sh*0.55):0;
     const fY=sp.t==='fall'?(sp.d.y||0):0;
-    // ИСПРАВЛЕНО: все спрайты стоят на полу — нижняя точка = horizon
-    const floorY=horizon;
+    // FIX: floor = horizon + H/(2*dist) so sprites stand on ground
+    const wallHalfH=Math.floor(H/(2*Math.max(0.1,dist)));
+    const floorY=horizon+wallHalfH;
     let sTop;
     if(sp.t==='fall'){sTop=Math.floor(floorY-sh*(1-fY*0.45));}
     else{sTop=Math.floor(floorY-sh+rOff);}
@@ -953,7 +983,7 @@ function hMsg(msg){
       G.allP=true;G.exitH=true;
       startBobikExit();
       if(AU.bg&&AU.bg.paused)AU.bg.play().catch(()=>{});
-      showBobik(t('allPages'));
+      runAllPagesCS(()=>{showBobik(t('allPages'));});
       document.getElementById('gi').innerHTML=t('gatherZone').replace('\n','<br>');
       document.getElementById('gi').style.display='block';break;
     case 'escape_start':
@@ -1014,7 +1044,7 @@ function hMsg(msg){
       if(G.players[msg.playerId])G.players[msg.playerId].caught=true;uHUD();break;
     case 'player_healed':
       if(G.players[msg.playerId])G.players[msg.playerId].caught=false;
-      if(msg.playerId===myId){G.caught=false;document.getElementById('cm').style.display='none';document.getElementById('or').style.background='rgba(139,0,0,0)';showBobik(t('playerHealed'));}
+      if(msg.playerId===myId){G.caught=false;document.getElementById('cm').style.display='none';document.getElementById('or').style.background='rgba(139,0,0,0)';runHealedCS();showBobik(t('playerHealed'));}
       uHUD();break;
     case 'item_collected':
       G.items.forEach(i=>{if(i.id===msg.itemId)i.collected=true;});
@@ -1025,7 +1055,7 @@ function hMsg(msg){
         setTimeout(()=>{ob2.style.background='rgba(0,0,0,0)';ob2.style.transition='background 2.5s';},400);
         showBobik('⚠️ Тёмная страница!');
       }
-      if(msg.itemType==='page'){G.pages=G.items.filter(i=>i.type==='page'&&i.collected).length;const r=25-G.pages;if(r>0)showBobik(t('pagesLeft',r));uPHUD();}
+      if(msg.itemType==='page'){G.pages=G.items.filter(i=>i.type==='page'&&i.collected).length;const r=25-G.pages;if(r>0)showBobik(t('pagesLeft',r));uPHUD();if(msg.playerId===myId)runPageFoundCS(G.pages);}
       if(msg.itemType==='energo'&&msg.playerId===myId){G.adr=true;G.adrT=8000;document.getElementById('adb').style.display='block';showBobik(t('adrenaline'));}
       if(msg.itemType==='cross'&&msg.playerId===myId){G.hasCr=true;invAdd('cross');showBobik(t('crossFound'));}
       if(msg.itemType==='energo'&&msg.playerId===myId){invAdd('energo');}
@@ -1079,13 +1109,15 @@ function uMFX(){
 }
 let mzTO=null,lView=false;
 function mVis(){if(!G.myP||G.M.banished)return false;const dx=G.M.x-G.myP.x,dz=G.M.z-G.myP.z;if(Math.sqrt(dx*dx+dz*dz)>12)return false;let d=Math.atan2(dx,dz)-G.camY;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return Math.abs(d)<FOV*.5;}
-function tSeen(){mzTO=setTimeout(()=>mzTO=null,3000);FOV=Math.PI/1.7;pAU('zoom');setTimeout(()=>{FOV=Math.PI/2.5;},700);}
+function tSeen(){mzTO=setTimeout(()=>mzTO=null,3000);FOV=Math.PI/1.7;pAU('zoom');runMishkanSpottedCS();setTimeout(()=>{FOV=Math.PI/2.5;},700);}
 function tCaught(){
   document.getElementById('or').style.background='rgba(139,0,0,0.5)';
+  const sg=document.getElementById('screen-game');sg.classList.add('shake');setTimeout(()=>sg.classList.remove('shake'),700);
   document.getElementById('cm-title').textContent=t('cmTitle');
   document.getElementById('dh').textContent=t('dhWait');
   document.getElementById('cm').style.display='block';
   const s=document.getElementById('os');s.classList.add('show');pAU('scream');setTimeout(()=>s.classList.remove('show'),1500);
+  runCatchCutscene();
 }
 
 // ══ ESCAPE ══
@@ -1119,6 +1151,8 @@ function runEsc(){
         G.sX=10;G.sY=10;setTimeout(()=>{G.sX=0;G.sY=0;},600);
         startFall();send({type:'escape_phase2'});
         showBobik(t('mishkanRunning'));
+        const _panicL=['🐾 БЕГИ! БЕГИ! БЕГИ!','🐾 Он сломал стены! СПАСАЙСЯ!','🐾 НЕ ОГЛЯДЫВАЙСЯ!'];
+        _panicL.forEach((_l,_i)=>setTimeout(()=>showBobik(_l),_i*4000+2000));
       }
       if(ct3>=25&&ct3<101){const pk=(ct3-25)/76;if(Math.random()<.08+pk*.15){G.sX=(Math.random()-.5)*pk*8;G.sY=(Math.random()-.5)*pk*8;}document.getElementById('or').style.background=`rgba(139,0,0,${0.15+pk*0.35})`;}
       if(ct3>=101){clearInterval(G.monIv);}
@@ -1695,7 +1729,7 @@ function loop(ts){
     send({type:'player_move',x:G.myP.x,z:G.myP.z,angle:G.camY,sprint:G.sprint||G.escP2,interact:sendInteract});
     if(sendInteract)G.interact=false;
   }
-  bobT-=dt;if(bobT<=0){bobT=28+Math.random()*22;if(Math.random()<.3)showBobik(t('bobikTips')[Math.floor(Math.random()*t('bobikTips').length)]);}}
+  bobT-=dt;if(bobT<=0){bobT=22+Math.random()*18;const _tips=t('bobikTips');const _d2m=G.myP?d2(G.myP,G.M):99;const _pl=25-G.pages;let _tip=null;if(_d2m<10&&_d2m>4&&Math.random()<0.5){const _ct=['Я чую его... ОН РЯДОМ! Беги!','Осторожно! Мишкан в этом секторе!','Стоп! Не иди туда — он там!'];_tip=_ct[Math.floor(Math.random()*_ct.length)];}else if(_pl<=5&&_pl>0&&Math.random()<0.4){_tip='Осталось '+_pl+' страниц! Почти свободен!';}else if(G.exitH&&Math.random()<0.5){_tip='ВСЕ СТРАНИЦЫ! БЕГИ К ЖЁЛТОЙ ЗОНЕ!';}else if(G.hasCr&&Math.random()<0.3){_tip='Крест! Нажми G рядом с Мишканом!';}else{_tip=_tips[Math.floor(Math.random()*_tips.length)];}if(_tip)showBobik('🐾 '+_tip);}}
 
 
 // ═══════════════════════════════════════════════
@@ -1855,7 +1889,7 @@ function renderRoom(rc){
     const others=PRE.allPlayers.filter(p=>p.id!==myId);
     // Распределяем их по комнате (статичные позиции у стены)
     others.forEach((p,i)=>{
-      const ox=3+i*1.8,oz=7.5;
+      const ox=2.5+i*2.2,oz=8.2;
       const dx=ox-px,dz=oz-pz,dist=Math.sqrt(dx*dx+dz*dz);
       if(dist<0.3||dist>20)return;
       let rel=Math.atan2(dx,dz)-yaw;while(rel>Math.PI)rel-=Math.PI*2;while(rel<-Math.PI)rel+=Math.PI*2;
@@ -1868,7 +1902,8 @@ function renderRoom(rc){
       for(let sx2=0;sx2<sw;sx2++){
         const cx=scrX-Math.floor(sw/2)+sx2;
         if(cx<0||cx>=W||zB[cx]<=dist)continue;
-        const sTop=Math.floor(horizon-sh);
+        const wallHalfH2=Math.floor(H/(2*Math.max(0.1,dist)));
+        const sTop=Math.floor(horizon+wallHalfH2-sh);
         // Human-like sprite
         const headH2=Math.floor(sh*.13),neckH2=Math.floor(sh*.03),torsoH2=Math.floor(sh*.30),legH2=Math.floor(sh*.26);
         const skinR2=Math.floor(210*br),skinG2=Math.floor(170*br),skinB2=Math.floor(130*br);
@@ -2189,7 +2224,8 @@ function renderCorridorWithPlayers(cv,player,map,otherPlayers){
       for(let sx2=0;sx2<sw;sx2++){
         const cx=scrX-Math.floor(sw/2)+sx2;
         if(cx<0||cx>=W||zB[cx]<=dist)continue;
-        const sTop=Math.floor(horizon-sh);
+        const wallHalfH3=Math.floor(H/(2*Math.max(0.1,dist)));
+        const sTop=Math.floor(horizon+wallHalfH3-sh);
         const headH3=Math.floor(sh*.13),neckH3=Math.floor(sh*.03),torsoH3=Math.floor(sh*.30),legH3=Math.floor(sh*.26);
         const skinR3=Math.floor(210*br),skinG3=Math.floor(170*br),skinB3=Math.floor(130*br);
         ctx.fillStyle=`rgba(${Math.floor(40*br)},${Math.floor(25*br)},${Math.floor(10*br)},${br})`;ctx.fillRect(cx,sTop,1,Math.floor(headH3*.3));
@@ -2260,7 +2296,7 @@ function runBobikCutscene(){
   let bobX=cv.width+150, bobTargX=cv.width*0.55;
   let tp=0;
 
-  function showDlg(text, color, duration, cb){dlEl.style.display='block';dlEl.style.color=color||'#c8d8b0';dlEl.innerHTML=text;if(cb)setTimeout(()=>{dlEl.style.display='none';setTimeout(cb,300);},duration);}
+  function showDlg(text, color, duration, cb){dlEl.style.display='block';dlEl.style.color=color||'#c8d8b0';dlEl.style.opacity='0';dlEl.style.transition='opacity 0.3s';dlEl.innerHTML=text;setTimeout(()=>dlEl.style.opacity='1',20);if(cb)setTimeout(()=>{dlEl.style.opacity='0';setTimeout(()=>{dlEl.style.display='none';setTimeout(cb,200);},300);},duration);}
   function hideDlg(cb){dlEl.style.display='none';if(cb)setTimeout(cb,300);}
 
   const allNames = players.map(p=>p.name).join(', ');
@@ -2318,14 +2354,149 @@ function startTutorial(){
   const iv=setInterval(()=>{n--;el.textContent=n;if(n<=0){clearInterval(iv);runIntro(()=>startGC());}},1000);
 }
 
+
+// ── PAGE FOUND MINI-CUTSCENE ──
+let pageCsTO=null;
+function runPageFoundCS(pageNum){
+  const cs=document.getElementById('page-cs');
+  const cv=document.getElementById('page-cs-canvas');
+  const txt=document.getElementById('page-cs-text');
+  if(!cs||!cv)return;
+  clearTimeout(pageCsTO);
+  cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const ctx=cv.getContext('2d');
+  cs.style.display='block';txt.style.opacity='1';
+  txt.innerHTML='📄 СТРАНИЦА '+pageNum+'/25';
+  let _t=0;
+  const _pts=[];
+  for(let i=0;i<30;i++)_pts.push({x:window.innerWidth/2+(Math.random()-.5)*200,y:window.innerHeight*.4+(Math.random()-.5)*100,vx:(Math.random()-.5)*4,vy:-2-Math.random()*3,life:1,r:Math.floor(Math.random()*50+200),g:Math.floor(Math.random()*80+140)});
+  const _draw=()=>{_t+=0.016;cv.width=cv.width;_pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life-=0.02;p.vy+=0.05;if(p.life>0){ctx.globalAlpha=p.life;ctx.fillStyle='rgb('+p.r+','+p.g+',0)';ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();}});ctx.globalAlpha=1;if(_t<0.8)requestAnimationFrame(_draw);else{cs.style.display='none';txt.style.opacity='0';}};
+  requestAnimationFrame(_draw);
+  pageCsTO=setTimeout(()=>{cs.style.display='none';txt.style.opacity='0';},1800);
+}
+
+// ── ALL PAGES COLLECTED CUTSCENE ──
+function runAllPagesCS(cb){
+  const cs=document.getElementById('allpages-cs');
+  const cv=document.getElementById('allpages-canvas');
+  if(!cs||!cv){if(cb)cb();return;}
+  cs.style.display='block';cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const ctx=cv.getContext('2d');
+  const l1=document.getElementById('allpages-line1');
+  const l2=document.getElementById('allpages-line2');
+  if(l1)l1.textContent='ВСЕ СТРАНИЦЫ НАЙДЕНЫ!';
+  if(l2)l2.textContent='Мишкан изгнан... пока. Бегите к жёлтой зоне!';
+  let _t2=0;
+  const _stars=[];
+  for(let i=0;i<80;i++)_stars.push({x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*2+0.5,sp:0.3+Math.random()*0.7});
+  const _at=document.getElementById('allpages-text');
+  const _draw2=()=>{_t2+=0.016;ctx.fillStyle='rgba(0,0,0,0.1)';ctx.fillRect(0,0,cv.width,cv.height);_stars.forEach(s=>{s.y+=s.sp;if(s.y>cv.height)s.y=0;const _a=0.4+Math.sin(_t2*3+s.x)*0.3;ctx.globalAlpha=_a;ctx.fillStyle='#f0c030';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();});ctx.globalAlpha=1;if(_at)_at.style.transform='translate(-50%,-50%) scale('+(1+Math.sin(_t2*4)*0.04)+')';if(_t2<3.5)requestAnimationFrame(_draw2);else{cs.style.display='none';if(cb)cb();}};
+  requestAnimationFrame(_draw2);
+}
+
+// ── MISHKAN SPOTTED MICRO-CUTSCENE ──
+let _spotActive=false;
+function runMishkanSpottedCS(){
+  if(_spotActive)return;
+  const cs=document.getElementById('spot-cs');
+  const cv=document.getElementById('spot-cs-canvas');
+  if(!cs||!cv)return;
+  _spotActive=true;cs.style.display='block';
+  cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const ctx=cv.getContext('2d');
+  let _t3=0;
+  const _draw3=()=>{_t3+=0.016;ctx.clearRect(0,0,cv.width,cv.height);const _a=Math.max(0,0.5-_t3*0.5)*Math.abs(Math.sin(_t3*12));const _vg=ctx.createRadialGradient(cv.width/2,cv.height/2,0,cv.width/2,cv.height/2,cv.width*0.7);_vg.addColorStop(0,'rgba(255,0,0,0)');_vg.addColorStop(1,'rgba(200,0,0,'+_a+')');ctx.fillStyle=_vg;ctx.fillRect(0,0,cv.width,cv.height);if(_t3<0.8){ctx.save();ctx.globalAlpha=Math.min(1,_t3*5)*(1-_t3/0.8);ctx.font='bold '+Math.floor(cv.height*0.07)+'px Creepster,cursive';ctx.fillStyle='#ff2020';ctx.textAlign='center';ctx.shadowColor='#ff0000';ctx.shadowBlur=30;ctx.fillText('⚠ МИШКАН РЯДОМ ⚠',cv.width/2,cv.height*0.3);ctx.restore();}if(_t3<1.0)requestAnimationFrame(_draw3);else{cs.style.display='none';_spotActive=false;}};
+  requestAnimationFrame(_draw3);
+  setTimeout(()=>{cs.style.display='none';_spotActive=false;},1200);
+}
+
+// ── PLAYER HEALED CUTSCENE ──
+function runHealedCS(){
+  const cs=document.getElementById('page-cs');
+  const cv=document.getElementById('page-cs-canvas');
+  const txt=document.getElementById('page-cs-text');
+  if(!cs||!cv)return;
+  cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const ctx=cv.getContext('2d');
+  cs.style.display='block';txt.style.opacity='1';
+  txt.innerHTML='💚 ТЫ ИСЦЕЛЁН! БЕГИ!';txt.style.color='#40ff40';
+  let _t4=0;
+  const _hp=[];
+  for(let i=0;i<40;i++)_hp.push({x:window.innerWidth/2+(Math.random()-.5)*300,y:window.innerHeight*.5+(Math.random()-.5)*200,vx:(Math.random()-.5)*5,vy:-3-Math.random()*4,life:1});
+  const _draw4=()=>{_t4+=0.016;cv.width=cv.width;_hp.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life-=0.025;if(p.life>0){ctx.globalAlpha=p.life;ctx.fillStyle='#40ff80';ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fill();}});ctx.globalAlpha=1;if(_t4<1.2)requestAnimationFrame(_draw4);else{cs.style.display='none';txt.style.opacity='0';txt.style.color='#f0c030';}};
+  requestAnimationFrame(_draw4);
+  setTimeout(()=>{cs.style.display='none';},2000);
+}
+
+// ── CATCH CUTSCENE ──
+function runCatchCutscene(){
+  const cs=document.getElementById('catch-cs');
+  const cv=document.getElementById('catch-cs-canvas');
+  if(!cs||!cv)return;
+  cs.style.display='block';cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const ctx=cv.getContext('2d');
+  let _t5=0;
+  const _lines=[{t:0.0,text:'ОН ПОЙМАЛ ТЕБЯ...',col:'#ff2020',size:1.4},{t:0.8,text:'НЕ ДВИГАЙСЯ',col:'#ff6040',size:0.9},{t:1.6,text:'ЗОВИ ДРУЗЕЙ...',col:'#ffaa40',size:0.8}];
+  const _drips=[];
+  for(let i=0;i<25;i++)_drips.push({x:Math.random()*cv.width,y:-Math.random()*cv.height*0.5,vy:1.5+Math.random()*3,w:2+Math.random()*4});
+  const _draw5=()=>{
+    _t5+=0.016;
+    ctx.fillStyle='rgba(0,0,0,'+Math.min(0.92,_t5*0.4)+')';ctx.fillRect(0,0,cv.width,cv.height);
+    _drips.forEach(d=>{d.y+=d.vy*(1+_t5*0.3);if(d.y>cv.height){d.y=-20;d.x=Math.random()*cv.width;}ctx.fillStyle='rgba(180,0,0,'+0.7*Math.min(1,_t5*2)+')';ctx.fillRect(d.x,d.y,d.w,20+d.vy*8);});
+    const _vg=ctx.createRadialGradient(cv.width/2,cv.height/2,0,cv.width/2,cv.height/2,cv.width*0.7);_vg.addColorStop(0,'rgba(80,0,0,0)');_vg.addColorStop(1,'rgba(150,0,0,'+Math.min(0.6,_t5*0.3)+')');ctx.fillStyle=_vg;ctx.fillRect(0,0,cv.width,cv.height);
+    _lines.forEach(l=>{if(_t5<l.t)return;const _age=_t5-l.t,_al=Math.min(1,_age*3)*(1-Math.max(0,(_t5-2.5)/0.8));if(_al<=0)return;ctx.save();ctx.globalAlpha=_al;const _sh=(_age<0.4)?(Math.random()-.5)*12:0;ctx.translate(_sh,_sh*0.5);ctx.font='bold '+Math.floor(cv.height*l.size*0.065)+'px Creepster,cursive';ctx.fillStyle=l.col;ctx.textAlign='center';ctx.shadowColor=l.col;ctx.shadowBlur=20;ctx.fillText(l.text,cv.width/2,cv.height*0.35+_lines.indexOf(l)*cv.height*0.12);ctx.restore();});
+    if(_t5<3.2)requestAnimationFrame(_draw5);else cs.style.display='none';
+  };
+  requestAnimationFrame(_draw5);
+}
+
+// ── END GAME CUTSCENE ──
+function runEndCutscene(won,cb){
+  const cs=document.getElementById('endcs');
+  const cv=document.getElementById('endcs-canvas');
+  if(!cs||!cv){if(cb)cb();return;}
+  cs.style.display='block';cv.width=window.innerWidth;cv.height=window.innerHeight;
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  let _t6=0;
+  if(won){
+    const _rays=[];for(let i=0;i<12;i++)_rays.push({angle:i/12*Math.PI*2,speed:0.008});
+    const _conf=[];for(let i=0;i<60;i++)_conf.push({x:Math.random()*W,y:-Math.random()*H,vy:2+Math.random()*3,vx:(Math.random()-.5)*2,col:'hsl('+Math.floor(Math.random()*60+30)+',100%,60%)',r:Math.floor(Math.random()*5+3)});
+    const _wl=[{t:0.3,text:'ВЫ СБЕЖАЛИ!',col:'#f0c030',size:1.6},{t:1.2,text:'Мишкан остался в лесу...',col:'#a0e0a0',size:0.75},{t:2.2,text:'Бобик счастлив! 🐾',col:'#f0c030',size:0.9}];
+    const _drawW=()=>{
+      _t6+=0.016;
+      const _ba=Math.min(0.85,_t6*0.2);const _bg=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*0.8);_bg.addColorStop(0,'rgba(30,20,0,'+_ba+')');_bg.addColorStop(1,'rgba(0,0,0,'+(_ba*1.2)+')');ctx.fillStyle=_bg;ctx.fillRect(0,0,W,H);
+      const _ra=Math.min(0.3,_t6*0.05);_rays.forEach(r=>{r.angle+=r.speed;ctx.save();ctx.globalAlpha=_ra;ctx.fillStyle='#f0c030';ctx.beginPath();ctx.moveTo(W/2,H/2);ctx.lineTo(W/2+Math.cos(r.angle)*W,H/2+Math.sin(r.angle)*W);ctx.lineTo(W/2+Math.cos(r.angle+0.15)*W,H/2+Math.sin(r.angle+0.15)*W);ctx.closePath();ctx.fill();ctx.restore();});
+      _conf.forEach(c=>{c.y+=c.vy;c.x+=c.vx;if(c.y>H){c.y=-10;c.x=Math.random()*W;}ctx.globalAlpha=Math.min(1,_t6*2);ctx.fillStyle=c.col;ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fill();});
+      ctx.globalAlpha=1;
+      _wl.forEach(l=>{if(_t6<l.t)return;const _age=_t6-l.t,_al=Math.min(1,_age*3);ctx.save();ctx.globalAlpha=_al;ctx.font='bold '+Math.floor(H*l.size*0.065)+'px Creepster,cursive';ctx.fillStyle=l.col;ctx.textAlign='center';ctx.shadowColor=l.col;ctx.shadowBlur=25;ctx.fillText(l.text,W/2,H*0.38+_wl.indexOf(l)*H*0.13);ctx.restore();});
+      if(_t6<4.5)requestAnimationFrame(_drawW);else{cs.style.display='none';if(cb)cb();}
+    };
+    requestAnimationFrame(_drawW);
+  } else {
+    const _ll=[{t:0.5,text:'МИШКАН ПОЙМАЛ ВСЕХ...',col:'#ff2020',size:1.4},{t:1.5,text:'Лес снова спокоен.',col:'#886060',size:0.75},{t:2.5,text:'Бобик плачет... 🌧',col:'#8080aa',size:0.8}];
+    const _drawL=()=>{
+      _t6+=0.016;
+      ctx.fillStyle='rgba(5,0,0,'+Math.min(0.92,_t6*0.15)+')';ctx.fillRect(0,0,W,H);
+      if(_t6>0.5&&mRdy&&mImg.complete){const _ma=Math.min(0.55,(_t6-0.5)*0.12);const _mh=H*1.1,_mw=_mh*(mImg.naturalWidth/Math.max(1,mImg.naturalHeight));ctx.save();ctx.globalAlpha=_ma;ctx.drawImage(mImg,W/2-_mw/2,-H*0.08,_mw,_mh);ctx.fillStyle='rgba(120,0,0,'+(_ma*0.4)+')';ctx.fillRect(0,0,W,H);ctx.restore();}
+      const _vg=ctx.createRadialGradient(W/2,H/2,H*0.1,W/2,H/2,W*0.8);_vg.addColorStop(0,'rgba(0,0,0,0)');_vg.addColorStop(1,'rgba(0,0,0,'+Math.min(0.85,_t6*0.2)+')');ctx.fillStyle=_vg;ctx.fillRect(0,0,W,H);
+      _ll.forEach(l=>{if(_t6<l.t)return;const _age=_t6-l.t,_al=Math.min(1,_age*2);ctx.save();ctx.globalAlpha=_al;const _sh=_age<0.4?(Math.random()-.5)*12:0;ctx.translate(_sh,_sh*0.5);ctx.font='bold '+Math.floor(H*l.size*0.065)+'px Creepster,cursive';ctx.fillStyle=l.col;ctx.textAlign='center';ctx.shadowColor=l.col;ctx.shadowBlur=20;ctx.fillText(l.text,W/2,H*0.35+_ll.indexOf(l)*H*0.12);ctx.restore();});
+      if(_t6<4.5)requestAnimationFrame(_drawL);else{cs.style.display='none';if(cb)cb();}
+    };
+    requestAnimationFrame(_drawL);
+  }
+}
+
 function endGame(won){
   if(AU.bg)AU.bg.pause();if(AU.escape)AU.escape.pause();
   if(G.monIv)clearInterval(G.monIv);if(G.fallIv)clearInterval(G.fallIv);
-  document.getElementById('et2').textContent=won?t('wonTitle'):t('lostTitle');
-  document.getElementById('et2').style.color=won?'#4ac84a':'#ff3030';
-  document.getElementById('em').textContent=won?t('wonMsg'):t('lostMsg');
-  document.getElementById('btn-menu').textContent=t('btnMenu');
-  showScreen('screen-end');
+  runEndCutscene(won,()=>{
+    document.getElementById('et2').textContent=won?t('wonTitle'):t('lostTitle');
+    document.getElementById('et2').style.color=won?'#4ac84a':'#ff3030';
+    document.getElementById('em').textContent=won?t('wonMsg'):t('lostMsg');
+    document.getElementById('btn-menu').textContent=t('btnMenu');
+    showScreen('screen-end');
+  });
 }
 </script>
 </body>
