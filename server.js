@@ -79,9 +79,9 @@ function genMap(){
   return map;
 }
 
-// ═══ КОРИДОР ПОБЕГА 64x300 ═══
+// ═══ КОРИДОР ПОБЕГА 64x500 ═══
 function genCorridorMap(){
-  const W=64,H=300,map=[];
+  const W=64,H=500,map=[];
   for(let z=0;z<H;z++)map.push(new Array(W).fill(1));
   const cx=Math.floor(W/2);
   for(let z=0;z<H;z++)for(let x=cx-6;x<=cx+6;x++)map[z][x]=0;
@@ -115,6 +115,14 @@ function makeItems(map){
     {id:'page_4',type:'page',x:58.5,z:7.5},{id:'page_5',type:'page',x:3.5,z:17.5},
     {id:'page_6',type:'page',x:55.5,z:17.5},{id:'page_7',type:'page',x:3.5,z:31.5},
     {id:'page_8',type:'page',x:42.5,z:31.5},{id:'page_9',type:'page',x:8.5,z:47.5},
+    {id:'page_10',type:'page',x:20.5,z:6.5},{id:'page_11',type:'page',x:35.5,z:4.5},
+    {id:'page_12',type:'page',x:61.5,z:5.5},{id:'page_13',type:'page',x:6.5,z:14.5},
+    {id:'page_14',type:'page',x:47.5,z:14.5},{id:'page_15',type:'page',x:19.5,z:18.5},
+    {id:'page_16',type:'page',x:38.5,z:20.5},{id:'page_17',type:'page',x:60.5,z:20.5},
+    {id:'page_18',type:'page',x:9.5,z:35.5},{id:'page_19',type:'page',x:25.5,z:33.5},
+    {id:'page_20',type:'page',x:46.5,z:34.5},{id:'page_21',type:'page',x:58.5,z:33.5},
+    {id:'page_22',type:'page',x:4.5,z:50.5},{id:'page_23',type:'page',x:30.5,z:48.5},
+    {id:'page_24',type:'page',x:42.5,z:50.5},
     {id:'energo_0',type:'energo',x:18.5,z:4.5},{id:'energo_1',type:'energo',x:45.5,z:4.5},
     {id:'energo_2',type:'energo',x:7.5,z:18.5},{id:'energo_3',type:'energo',x:57.5,z:18.5},
     {id:'energo_4',type:'energo',x:24.5,z:30.5},
@@ -136,10 +144,37 @@ function makeItems(map){
 }
 
 function newMishkan(){
-  return{x:MISHKAN_SPAWN.x,z:MISHKAN_SPAWN.z,angle:0,speed:0.028,state:'patrol',
+  return{x:MISHKAN_SPAWN.x,z:MISHKAN_SPAWN.z,angle:0,speed:0.032,state:'patrol',
     patrolTarget:{x:24,z:16},lastUpdate:Date.now(),gracePeriod:8000,
     banished:false,banishTimer:0,escapeRunning:false,
-    stuckX:MISHKAN_SPAWN.x,stuckZ:MISHKAN_SPAWN.z,stuckT:0};
+    stuckX:MISHKAN_SPAWN.x,stuckZ:MISHKAN_SPAWN.z,stuckT:0,
+    waypointQueue:[],lastWaypointT:0};
+}
+
+// BFS pathfind — returns next step toward target avoiding walls
+function bfsNextStep(map,fx,fz,tx,tz){
+  const sx=Math.floor(fx),sz=Math.floor(fz),ex=Math.floor(tx),ez=Math.floor(tz);
+  if(sx===ex&&sz===ez)return null;
+  const SZ=map.length,SX=map[0].length;
+  const key=(x,z)=>z*SX+x;
+  const visited=new Set();const queue=[[sx,sz,null]];visited.add(key(sx,sz));
+  const DIRS=[[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,-1],[-1,1],[1,1]];
+  let found=null;
+  while(queue.length>0){
+    const [cx2,cz2,first]=queue.shift();
+    if(cx2===ex&&cz2===ez){found=first||[cx2,cz2];break;}
+    for(const [dx,dz] of DIRS){
+      const nx=cx2+dx,nz=cz2+dz;
+      if(nx<0||nx>=SX||nz<0||nz>=SZ)continue;
+      if(map[nz][nx]===1)continue;
+      if(visited.has(key(nx,nz)))continue;
+      visited.add(key(nx,nz));
+      if(dx!==0&&dz!==0&&(map[cz2][nx]===1||map[nz][cx2]===1))continue;
+      queue.push([nx,nz,first||[nx,nz]]);
+      if(queue.length>4000)break;
+    }
+  }
+  return found;
 }
 
 function moveTo(m,tx,tz,spd,map){
@@ -153,12 +188,32 @@ function moveTo(m,tx,tz,spd,map){
   return false;
 }
 
+function smartMoveTo(m,tx,tz,spd,map){
+  // Try direct path first
+  const direct=moveTo(m,tx,tz,spd,map);
+  if(direct)return;
+  // Use BFS waypoint if stuck
+  const now=Date.now();
+  if(!m.waypointQueue||m.waypointQueue.length===0||now-m.lastWaypointT>2000){
+    const step=bfsNextStep(map,m.x,m.z,tx,tz);
+    if(step){m.waypointQueue=[{x:step[0]+0.5,z:step[1]+0.5}];m.lastWaypointT=now;}
+  }
+  if(m.waypointQueue&&m.waypointQueue.length>0){
+    const wp=m.waypointQueue[0];
+    const d=Math.sqrt((wp.x-m.x)**2+(wp.z-m.z)**2);
+    if(d<0.6){m.waypointQueue.shift();return;}
+    moveTo(m,wp.x,wp.z,spd,map);
+  }
+}
+
 function tickMishkan(gs){
   const m=gs.mishkan,map=gs.map;
   const now=Date.now(),dt=Math.min((now-m.lastUpdate)/1000,0.05);
   m.lastUpdate=now;
-  if(m.banished){m.banishTimer-=dt;if(m.banishTimer<=0){m.banished=false;m.x=MISHKAN_SPAWN.x;m.z=MISHKAN_SPAWN.z;m.gracePeriod=gs.allPagesCollected?999999:5000;}return null;}
-  if(m.gracePeriod>0){m.gracePeriod-=dt*1000;moveTo(m,m.patrolTarget.x,m.patrolTarget.z,m.speed*45*dt*0.4,map);if(Math.sqrt((m.patrolTarget.x-m.x)**2+(m.patrolTarget.z-m.z)**2)<1)m.patrolTarget={x:15+Math.random()*30,z:5+Math.random()*30};return null;}
+  if(m.banished){m.banishTimer-=dt;if(m.banishTimer<=0){m.banished=false;m.x=MISHKAN_SPAWN.x;m.z=MISHKAN_SPAWN.z;m.gracePeriod=gs.allPagesCollected?999999:5000;m.waypointQueue=[];}return null;}
+  // In page-collecting phase: faster speed (1.35x)
+  const pageSpeedMult=gs.allPagesCollected?1.0:1.35;
+  if(m.gracePeriod>0){m.gracePeriod-=dt*1000;smartMoveTo(m,m.patrolTarget.x,m.patrolTarget.z,m.speed*45*dt*0.35,map);if(Math.sqrt((m.patrolTarget.x-m.x)**2+(m.patrolTarget.z-m.z)**2)<1)m.patrolTarget={x:15+Math.random()*30,z:5+Math.random()*30};return null;}
   if(gs.escapeActive&&!m.escapeRunning)return null;
   // Не преследуем игроков в шкафчиках — они спрятаны
   let closest=null,cd=Infinity;
@@ -175,7 +230,6 @@ function tickMishkan(gs){
     const d=Math.sqrt((item.x-m.x)**2+(item.z-m.z)**2);
     if(d<1.5&&!p.lockerMinigameActive){
       p.lockerMinigameActive=true;
-      // сообщить игроку о начале мини-игры
     }
   });
   if(!closest){
@@ -188,14 +242,37 @@ function tickMishkan(gs){
       const d=Math.sqrt((item.x-m.x)**2+(item.z-m.z)**2);
       if(d<ltd){ltd=d;lockerTarget=item;}
     });
-    if(lockerTarget){moveTo(m,lockerTarget.x,lockerTarget.z,m.speed*45*dt*0.9,map);}
-    else{moveTo(m,m.patrolTarget.x,m.patrolTarget.z,m.speed*45*dt*0.7,map);if(Math.sqrt((m.patrolTarget.x-m.x)**2+(m.patrolTarget.z-m.z)**2)<1){let nx,nz,a=0;do{nx=2+Math.floor(Math.random()*58);nz=2+Math.floor(Math.random()*55);a++;}while(map[nz]&&map[nz][nx]===1&&a<80);m.patrolTarget={x:nx+0.5,z:nz+0.5};}}
+    if(lockerTarget){smartMoveTo(m,lockerTarget.x,lockerTarget.z,m.speed*45*dt*0.9*pageSpeedMult,map);}
+    else{
+      // Smart patrol: pick targets using BFS to ensure reachability
+      const distToPatrol=Math.sqrt((m.patrolTarget.x-m.x)**2+(m.patrolTarget.z-m.z)**2);
+      smartMoveTo(m,m.patrolTarget.x,m.patrolTarget.z,m.speed*45*dt*0.7*pageSpeedMult,map);
+      if(distToPatrol<1.5||(m.waypointQueue&&m.waypointQueue.length===0&&distToPatrol>2)){
+        let nx,nz,a=0;
+        do{nx=2+Math.floor(Math.random()*58);nz=2+Math.floor(Math.random()*55);a++;}
+        while(map[nz]&&map[nz][nx]===1&&a<80);
+        m.patrolTarget={x:nx+0.5,z:nz+0.5};
+        m.waypointQueue=[];
+      }
+    }
     return null;
   }
   if(cd<0.8&&!closest.caught){closest.caught=true;return{event:'caught',id:closest.id};}
   const eMult=m.escapeRunning?7.0:1.0;
-  moveTo(m,closest.x,closest.z,m.speed*45*dt*(cd<8?1.2:1.0)*eMult,map);
-  m.stuckT+=dt;if(m.stuckT>1.5){const md=Math.sqrt((m.x-m.stuckX)**2+(m.z-m.stuckZ)**2);m.stuckT=0;m.stuckX=m.x;m.stuckZ=m.z;if(md<0.1){const tx=m.x+(closest.x-m.x)*0.3,tz=m.z+(closest.z-m.z)*0.3;if(map[Math.floor(tz)]&&map[Math.floor(tz)][Math.floor(tx)]!==1){m.x=tx;m.z=tz;}}}
+  // Smart chase with BFS
+  const chaseSpd=m.speed*45*dt*(cd<8?1.2:1.0)*eMult*pageSpeedMult;
+  smartMoveTo(m,closest.x,closest.z,chaseSpd,map);
+  // Teleport recovery if truly stuck for 3 seconds
+  m.stuckT+=dt;
+  if(m.stuckT>3.0){
+    const md=Math.sqrt((m.x-m.stuckX)**2+(m.z-m.stuckZ)**2);
+    m.stuckT=0;m.stuckX=m.x;m.stuckZ=m.z;
+    if(md<0.15){
+      // Use BFS to find path
+      const step=bfsNextStep(map,m.x,m.z,closest.x,closest.z);
+      if(step){m.x=step[0]+0.5;m.z=step[1]+0.5;m.waypointQueue=[];}
+    }
+  }
   return null;
 }
 
@@ -223,7 +300,7 @@ function startLoop(code){
       }
     });
 
-    if(!gs.allPagesCollected&&gs.items.filter(i=>i.type==='page').every(p=>p.collected)){
+    if(!gs.allPagesCollected&&gs.items.filter(i=>i.type==="page").every(p=>p.collected)){
       gs.allPagesCollected=true;
       gs.mishkan.gracePeriod=999999;
       bcast(code,{type:'pages_all_collected'});
@@ -236,9 +313,9 @@ function startLoop(code){
         gs.map=genCorridorMap();
         gs.corridorMap=true;
         const cxC=32;
-        gs.players.forEach((p,i)=>{p.x=cxC-2+i%3;p.z=288-Math.floor(i/3)*2;p.hidingLockerId=null;p.lockerMinigameActive=false;});
+        gs.players.forEach((p,i)=>{p.x=cxC-2+i%3;p.z=488-Math.floor(i/3)*2;p.hidingLockerId=null;p.lockerMinigameActive=false;});
         // ИСПРАВЛЕНО: мишкан в самом конце коридора (z=295), не в стене
-        gs.mishkan.x=cxC;gs.mishkan.z=295;gs.mishkan.escapeRunning=false;gs.mishkan.gracePeriod=0;
+        gs.mishkan.x=cxC;gs.mishkan.z=498;gs.mishkan.escapeRunning=false;gs.mishkan.gracePeriod=0;
         bcast(code,{type:'escape_start',map:gs.map,players:gs.players.map(p=>({id:p.id,x:p.x,z:p.z}))});
       }
     }
