@@ -138,6 +138,14 @@ input.inp:focus{border-color:#ff3030;}
 #locker-cs{position:fixed;inset:0;z-index:80;display:none;background:#000;}
 #locker-cs.active{display:block;}
 #locker-cs-canvas{width:100%;height:100%;display:block;}
+
+/* CREDITS SCREEN */
+#credits-screen{position:fixed;inset:0;z-index:300;display:none;overflow:hidden;background:#000;}
+#credits-bg-canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
+#credits-scroll{position:absolute;left:50%;transform:translateX(-50%);width:min(700px,92vw);text-align:center;padding-bottom:80px;}
+#credits-chars{position:absolute;bottom:0;left:0;width:100%;height:35%;pointer-events:none;}
+#credits-ending{position:fixed;inset:0;z-index:301;display:none;align-items:center;justify-content:center;background:#000;}
+#credits-ending-text{font-family:'Creepster',cursive;font-size:clamp(1.5rem,5vw,3rem);color:#ff3030;text-shadow:0 0 30px #ff000099;letter-spacing:4px;opacity:0;transition:opacity 2s;}
 </style>
 </head>
 <body>
@@ -296,6 +304,16 @@ input.inp:focus{border-color:#ff3030;}
 <div id="screen-end" class="screen">
   <h1 id="et2"></h1><p id="em"></p>
   <button class="btn" id="btn-menu" onclick="location.reload()"></button>
+</div>
+
+<!-- CREDITS SCREEN -->
+<div id="credits-screen">
+  <canvas id="credits-bg-canvas"></canvas>
+  <div id="credits-scroll" style="position:absolute;top:100vh;left:50%;transform:translateX(-50%);width:min(700px,92vw);text-align:center;padding-bottom:200px;"></div>
+  <canvas id="credits-chars" style="position:absolute;bottom:0;left:0;width:100%;height:38%;pointer-events:none;"></canvas>
+</div>
+<div id="credits-ending" style="position:fixed;inset:0;z-index:301;display:none;align-items:center;justify-content:center;background:#000;">
+  <div id="credits-ending-text">МИШКАН ВЕЗДЕ</div>
 </div>
 
 <!-- LOCKER MINIGAME OVERLAY -->
@@ -1087,9 +1105,8 @@ function hMsg(msg){
         showBobik('⚠️ Тёмная страница!');
       }
       if(msg.itemType==='page'){G.pages=G.items.filter(i=>i.type==='page'&&i.collected).length;const r=25-G.pages;if(r>0)showBobik(t('pagesLeft',r));uPHUD();if(msg.playerId===myId)runPageFoundCS(G.pages);}
-      if(msg.itemType==='energo'&&msg.playerId===myId){G.adr=true;G.adrT=8000;document.getElementById('adb').style.display='block';showBobik(t('adrenaline'));}
       if(msg.itemType==='cross'&&msg.playerId===myId){G.hasCr=true;invAdd('cross');showBobik(t('crossFound'));}
-      if(msg.itemType==='energo'&&msg.playerId===myId){invAdd('energo');}
+      if(msg.itemType==='energo'&&msg.playerId===myId){invAdd('energo');showBobik(t('niTakeEnergy'));}
       break;
     case 'player_ready_ack':
       if(msg.readyIds)msg.readyIds.forEach(id=>{if(id!==myId)markPlayerReady(id);});
@@ -2586,13 +2603,393 @@ function runEndCutscene(won,cb){
 function endGame(won){
   if(AU.bg)AU.bg.pause();if(AU.escape)AU.escape.pause();
   if(G.monIv)clearInterval(G.monIv);if(G.fallIv)clearInterval(G.fallIv);
-  runEndCutscene(won,()=>{
-    document.getElementById('et2').textContent=won?t('wonTitle'):t('lostTitle');
-    document.getElementById('et2').style.color=won?'#4ac84a':'#ff3030';
-    document.getElementById('em').textContent=won?t('wonMsg'):t('lostMsg');
-    document.getElementById('btn-menu').textContent=t('btnMenu');
-    showScreen('screen-end');
+  if(won){
+    // Fade out all sounds, then start credits
+    let vol=1.0;
+    const fadeIv=setInterval(()=>{
+      vol=Math.max(0,vol-0.05);
+      Object.values(AU).forEach(a=>{try{if(a&&!a.paused)a.volume=Math.max(0,a.volume*0.92);}catch(e){}});
+      if(vol<=0){clearInterval(fadeIv);}
+    },80);
+    // Fade to black over 1.5s then start credits after 3s
+    const fadeEl=document.createElement('div');
+    fadeEl.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0);z-index:299;pointer-events:none;transition:background 1.5s;';
+    document.body.appendChild(fadeEl);
+    requestAnimationFrame(()=>{requestAnimationFrame(()=>{fadeEl.style.background='rgba(0,0,0,1)';});});
+    setTimeout(()=>{
+      fadeEl.remove();
+      Object.values(AU).forEach(a=>{try{a.pause();a.currentTime=0;}catch(e){}});
+      runCredits(()=>{
+        document.getElementById('et2').textContent=t('wonTitle');
+        document.getElementById('et2').style.color='#4ac84a';
+        document.getElementById('em').textContent=t('wonMsg');
+        document.getElementById('btn-menu').textContent=t('btnMenu');
+        showScreen('screen-end');
+      });
+    },3000);
+  } else {
+    runEndCutscene(false,()=>{
+      document.getElementById('et2').textContent=t('lostTitle');
+      document.getElementById('et2').style.color='#ff3030';
+      document.getElementById('em').textContent=t('lostMsg');
+      document.getElementById('btn-menu').textContent=t('btnMenu');
+      showScreen('screen-end');
+    });
+  }
+}
+
+// ── CREDITS ──
+function runCredits(cb){
+  const screen=document.getElementById('credits-screen');
+  const bgCv=document.getElementById('credits-bg-canvas');
+  const scrollEl=document.getElementById('credits-scroll');
+  const charsCv=document.getElementById('credits-chars');
+  screen.style.display='block';
+  bgCv.width=window.innerWidth;bgCv.height=window.innerHeight;
+  charsCv.width=window.innerWidth;charsCv.height=Math.floor(window.innerHeight*0.38);
+
+  // Music
+  const music=new Audio('https://www.image2url.com/r2/default/files/1776162719948-2e02c021-65ab-4430-8e9e-ffe91d721474.m4a');
+  music.volume=0;
+  music.play().catch(()=>{});
+  let musicVol=0;
+  const fadeInMusic=setInterval(()=>{musicVol=Math.min(0.85,musicVol+0.025);music.volume=musicVol;if(musicVol>=0.85)clearInterval(fadeInMusic);},80);
+
+  // Credits text
+  const lines=[
+    {text:'🎬 ЛЕС МИШКАНА',style:'font-family:Creepster,cursive;font-size:clamp(2rem,7vw,3.5rem);color:#ff3030;text-shadow:0 0 30px #ff000099;letter-spacing:4px;margin-bottom:0.3em;'},
+    {text:'MISHKAN EDITION',style:'font-family:VT323,monospace;font-size:clamp(1rem,4vw,1.6rem);color:#888;letter-spacing:6px;margin-bottom:2.5em;'},
+    {text:'ГЕНЕРАЛЬНЫЙ ДИРЕКТОР ВСЕЛЕННОЙ МИШКАНОВ',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.15rem);color:#666;letter-spacing:3px;margin-bottom:0.2em;'},
+    {text:'Мишкан',style:'font-family:Creepster,cursive;font-size:clamp(1.4rem,5vw,2.2rem);color:#f0c030;text-shadow:0 0 15px #f0c03066;margin-bottom:2em;'},
+    {text:'РЕЖИССЁР-ПОСТАНОВЩИК (И ОТЪЁМЩИК ХП)',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.15rem);color:#666;letter-spacing:3px;margin-bottom:0.2em;'},
+    {text:'Мишкан',style:'font-family:Creepster,cursive;font-size:clamp(1.4rem,5vw,2.2rem);color:#f0c030;text-shadow:0 0 15px #f0c03066;margin-bottom:2em;'},
+    {text:'В ГЛАВНЫХ РОЛЯХ',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.2rem);color:#888;letter-spacing:4px;margin-bottom:0.5em;'},
+    {text:'Тот самый, кто дышит в спину: Мишкан',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Человек-Легенда, Гроза Леса: бобик',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Главный консультант по выживанию: Бобик (Спанч Боб)',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:2em;'},
+    {text:'ОЗВУЧКА',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.2rem);color:#888;letter-spacing:4px;margin-bottom:0.5em;'},
+    {text:'Голос ужаса и сопения: Мишкан',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Философские наставления и крики "Беги!": Бобик',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'звуки пузырьков: Бобик (Спанч Боб)',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:2em;'},
+    {text:'ДЕПАРТАМЕНТ СТРАХА',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.2rem);color:#888;letter-spacing:4px;margin-bottom:0.5em;'},
+    {text:'Главный по скримерам: Мишкан',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Помощник по скримерам: Мишкан',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Тот, кто вылетает из шкафа: Мишкан',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:2em;'},
+    {text:'ТЕХНИЧЕСКИЙ ПЕРСОНАЛ',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.2rem);color:#888;letter-spacing:4px;margin-bottom:0.5em;'},
+    {text:'Программист (писал код): Мишкан',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Дизайнер кустов и тумана: Мишкан',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Светотехник (забрал фонарик): Мишкан',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:2em;'},
+    {text:'СЛОТЫ И ПРЕДМЕТЫ',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.2rem);color:#888;letter-spacing:4px;margin-bottom:0.5em;'},
+    {text:'Спонсор энергосов: Мишкан',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Изготовитель святых крестов: Мишкан',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Директор по поставке страниц: Мишкан',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:2em;'},
+    {text:'ОСОБАЯ БЛАГОДАРНОСТЬ',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.2rem);color:#888;letter-spacing:4px;margin-bottom:0.5em;'},
+    {text:'Геннадию Тобьевичу — за то, что он Геннадий Тобьевич.',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Бобику (Спанч Бобу) — за моральную поддержку и за то, что он Бобик.',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Мишкану — за то, что он не удалил проект (пока что).',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:2em;'},
+    {text:'МУЗЫКАЛЬНОЕ СОПРОВОЖДЕНИЕ',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.2rem);color:#888;letter-spacing:4px;margin-bottom:0.5em;'},
+    {text:'Симфония "Топ-топ по листьям"',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Исполняет оркестр имени Мишкана',style:'font-family:VT323,monospace;font-size:clamp(0.9rem,3vw,1.3rem);color:#c8d8b0;letter-spacing:1px;margin-bottom:2em;'},
+    {text:'В ЭПИЗОДАХ',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.2rem);color:#888;letter-spacing:4px;margin-bottom:0.5em;'},
+    {text:'Мишкан, Мишкан, Мишкан, и приглашённая звезда — Мишкан.',style:'font-family:Creepster,cursive;font-size:clamp(1.1rem,4vw,1.8rem);color:#ff8040;margin-bottom:2em;'},
+    {text:'ДИСКЛЕЙМЕР',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.2rem);color:#888;letter-spacing:4px;margin-bottom:0.5em;'},
+    {text:'Во время разработки ни один Мишкан не пострадал.',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.1rem);color:#556655;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Пострадали только нервы игроков и один Бобик.',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.1rem);color:#556655;letter-spacing:1px;margin-bottom:0.2em;'},
+    {text:'Геннадий Тобьевич одобряет этот проект.',style:'font-family:VT323,monospace;font-size:clamp(0.85rem,3vw,1.1rem);color:#556655;letter-spacing:1px;margin-bottom:4em;'},
+  ];
+
+  // Build scrolling text
+  scrollEl.innerHTML='';
+  lines.forEach(l=>{
+    const d=document.createElement('div');
+    d.style.cssText=l.style+'line-height:1.3;';
+    d.textContent=l.text;
+    scrollEl.appendChild(d);
   });
+  // Reset position
+  scrollEl.style.top='100vh';
+
+  // Forest background animation
+  const bgCtx=bgCv.getContext('2d');
+  const W=bgCv.width,H=bgCv.height;
+  // Stars / fireflies
+  const fireflies=[];
+  for(let i=0;i<60;i++)fireflies.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*0.4,vy:(Math.random()-.5)*0.4,r:1+Math.random()*2.5,phase:Math.random()*Math.PI*2,col:Math.random()<0.5?'#40ff80':'#f0c030'});
+  // Trees silhouettes
+  const trees=[];
+  for(let i=0;i<18;i++)trees.push({x:Math.random()*W,h:H*0.2+Math.random()*H*0.45,w:18+Math.random()*32,sway:Math.random()*Math.PI*2,swayS:0.3+Math.random()*0.5});
+
+  // Characters animation state
+  // 0:00-0:10 Мишкан moonwalk. 0:10-0:25 Бобик появляется. 0:25-0:45 Геннадий падает. 0:45+ dance
+  const chars={
+    mishkan:{x:W*0.5,y:0,phase:0,dancing:false,spin:0,flexT:0,breakT:0,sunglasses:false,visible:true},
+    bobik:{x:W*0.2,y:0,visible:false,clapping:0,wave:0},
+    gennady:{x:W*0.65,y:0,visible:false,pose:0,speed:1,energoT:0}
+  };
+
+  let credT=0;
+  let scrollY=window.innerHeight; // starts off screen, scrolls up
+  const SONG_DURATION=155; // ~2:35 approx
+  const scrollDistance=scrollEl.scrollHeight+window.innerHeight;
+  const scrollSpeed=scrollDistance/SONG_DURATION;
+
+  // Pages flying (1:30+)
+  const flyPages=[];
+
+  function drawBg(t2){
+    bgCtx.fillStyle='#000a04';bgCtx.fillRect(0,0,W,H);
+    // Gradient sky
+    const sky=bgCtx.createLinearGradient(0,0,0,H*0.6);
+    sky.addColorStop(0,'rgba(0,8,3,1)');sky.addColorStop(1,'rgba(0,18,8,1)');
+    bgCtx.fillStyle=sky;bgCtx.fillRect(0,0,W,H*0.6);
+    // Trees
+    trees.forEach(tr=>{
+      const sw=Math.sin(t2*tr.swayS+tr.sway)*3;
+      bgCtx.save();bgCtx.translate(tr.x+sw,H);
+      bgCtx.fillStyle='rgba(5,15,5,0.9)';
+      bgCtx.beginPath();bgCtx.moveTo(-tr.w/2,0);bgCtx.lineTo(0,-tr.h);bgCtx.lineTo(tr.w/2,0);bgCtx.closePath();bgCtx.fill();
+      bgCtx.restore();
+    });
+    // Fireflies
+    fireflies.forEach(f=>{
+      f.x+=f.vx;f.y+=f.vy;f.phase+=0.04;
+      if(f.x<0)f.x=W;if(f.x>W)f.x=0;if(f.y<0)f.y=H;if(f.y>H)f.y=0;
+      const a=(Math.sin(f.phase)+1)*0.5*0.8+0.1;
+      bgCtx.globalAlpha=a;bgCtx.fillStyle=f.col;
+      bgCtx.beginPath();bgCtx.arc(f.x,f.y,f.r,0,Math.PI*2);bgCtx.fill();
+    });
+    bgCtx.globalAlpha=1;
+    // Flying pages 1:30+
+    if(t2>90){
+      if(Math.random()<0.03)flyPages.push({x:Math.random()*W,y:H+20,vx:(Math.random()-.5)*2,vy:-1.5-Math.random()*2,rot:Math.random()*Math.PI*2,rotV:(Math.random()-.5)*0.1});
+      flyPages.forEach((p,i)=>{p.x+=p.vx;p.y+=p.vy;p.rot+=p.rotV;if(p.y<-30)flyPages.splice(i,1);bgCtx.save();bgCtx.translate(p.x,p.y);bgCtx.rotate(p.rot);bgCtx.fillStyle='rgba(200,170,60,0.6)';bgCtx.fillRect(-10,-13,20,26);bgCtx.restore();});
+    }
+  }
+
+  const charCtx=charsCv.getContext('2d');
+  function drawChars(t2){
+    charCtx.clearRect(0,0,charsCv.width,charsCv.height);
+    const cH=charsCv.height,cW=charsCv.width;
+
+    // Мишкан (центр) — moonwalk 0-10s, потом крутится, потом флекс 1:05-1:30, потом брейк 1:50+
+    if(chars.mishkan.visible){
+      const mx=cW*0.5;
+      let walkOff=0;
+      if(t2<10){// Moonwalk — движется назад медленно
+        walkOff=Math.sin(t2*1.5)*8;
+        chars.mishkan.x=Math.max(cW*0.25,chars.mishkan.x-0.15);
+      } else if(t2<25){
+        chars.mishkan.spin+=0.08;
+      } else if(t2>=65&&t2<90){// flex
+        chars.mishkan.flexT+=0.12;
+      } else if(t2>=110&&t2<135){// breakdance
+        chars.mishkan.breakT+=0.15;
+      }
+      if(t2>=135){chars.mishkan.sunglasses=true;}
+
+      const bY=Math.sin(t2*3)*4;
+      const sh=Math.min(cH*0.85,180);
+      const sx=chars.mishkan.x;
+      charCtx.save();
+      charCtx.translate(sx,cH-10+bY+walkOff*0.3);
+      if(chars.mishkan.spin>0){charCtx.rotate(chars.mishkan.spin);}
+      if(chars.mishkan.breakT>0){charCtx.rotate(Math.sin(chars.mishkan.breakT)*0.4);}
+      // Draw Mishkan (dark silhouette with red eyes)
+      _drawMishkanSilhouette(charCtx,sh,chars.mishkan.flexT,chars.mishkan.sunglasses);
+      // Flashlight beam during flex
+      if(chars.mishkan.flexT>0&&t2<135){
+        const beamA=Math.abs(Math.sin(chars.mishkan.flexT*0.5));
+        charCtx.globalAlpha=beamA*0.5;
+        charCtx.strokeStyle='#ffff80';charCtx.lineWidth=8;
+        charCtx.shadowColor='#ffff00';charCtx.shadowBlur=20;
+        charCtx.beginPath();charCtx.moveTo(20,-sh*0.35);charCtx.lineTo(20+120*beamA,-sh*0.35-60*beamA);charCtx.stroke();
+        charCtx.globalAlpha=1;charCtx.shadowBlur=0;
+      }
+      charCtx.restore();
+    }
+
+    // Бобик (слева) — появляется в 0:10
+    if(t2>10){
+      chars.bobik.visible=true;
+      chars.bobik.clapping+=0.18;
+      const bx=cW*0.18;
+      const by=Math.sin(t2*4)*5;
+      const sh=Math.min(cH*0.75,150);
+      charCtx.save();charCtx.translate(bx,cH-8+by);
+      if(t2>=45&&t2<65){// sync dance
+        charCtx.translate(Math.sin(t2*3)*12,0);
+      }
+      // Jumping for pages 1:30-1:50
+      if(t2>=90&&t2<110){
+        charCtx.translate(0,-Math.abs(Math.sin(t2*6))*25);
+      }
+      _drawBobik(charCtx,sh,chars.bobik.clapping);
+      charCtx.restore();
+    }
+
+    // Геннадий (справа) — появляется в 0:25 с тросом
+    if(t2>25){
+      chars.gennady.visible=true;
+      const gx=cW*0.78;
+      let gy=0;
+      if(t2<28){gy=-(cH*(1-(t2-25)/3));}// падает
+      const sh=Math.min(cH*0.8,160);
+      charCtx.save();
+      const gSpeed=t2>=110?2.5:1;
+      charCtx.translate(gx,cH-8+gy);
+      if(t2>=45&&t2<65){charCtx.translate(Math.sin(t2*3+Math.PI)*12,0);}
+      // Energo effect 1:50+
+      if(t2>=110){
+        charCtx.scale(1+Math.sin(t2*8)*0.04,1+Math.sin(t2*8)*0.04);
+        charCtx.shadowColor='#00ffaa';charCtx.shadowBlur=20;
+      }
+      _drawGennady(charCtx,sh,t2);
+      charCtx.restore();
+    }
+  }
+
+  function _drawMishkanSilhouette(ctx,h,flexT,sunglasses){
+    // Dark figure with glowing red eyes
+    const hw=h*0.4;
+    ctx.fillStyle='rgba(20,10,10,0.92)';
+    // Body
+    ctx.beginPath();ctx.ellipse(0,-h*0.5,hw*0.28,h*0.42,0,0,Math.PI*2);ctx.fill();
+    // Head
+    ctx.beginPath();ctx.arc(0,-h*0.87,hw*0.2,0,Math.PI*2);ctx.fill();
+    // Arms if flex
+    if(flexT>0){
+      const fa=Math.sin(flexT)*0.5+0.5;
+      ctx.strokeStyle='rgba(20,10,10,0.9)';ctx.lineWidth=hw*0.13;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(-hw*0.28,-h*0.65);ctx.lineTo(-hw*0.55-fa*20,-h*0.75-fa*10);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(hw*0.28,-h*0.65);ctx.lineTo(hw*0.55+fa*20,-h*0.75-fa*10);ctx.stroke();
+    }
+    // Red eyes
+    ctx.fillStyle='#ff1010';ctx.shadowColor='#ff0000';ctx.shadowBlur=8;
+    ctx.beginPath();ctx.arc(-hw*0.07,-h*0.88,3,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(hw*0.07,-h*0.88,3,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+    if(sunglasses){
+      ctx.strokeStyle='#111';ctx.lineWidth=3;ctx.fillStyle='rgba(0,0,0,0.85)';
+      ctx.beginPath();ctx.roundRect(-hw*0.16,-h*0.895,hw*0.13,hw*0.085,2);ctx.fill();ctx.stroke();
+      ctx.beginPath();ctx.roundRect(hw*0.03,-h*0.895,hw*0.13,hw*0.085,2);ctx.fill();ctx.stroke();
+      // Bridge
+      ctx.strokeStyle='#333';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(-hw*0.03,-h*0.888);ctx.lineTo(hw*0.03,-h*0.888);ctx.stroke();
+    }
+  }
+
+  function _drawBobik(ctx,h,clap){
+    // Yellow square (SpongeBob style)
+    const cl=Math.sin(clap);
+    ctx.fillStyle='#f5c800';
+    // Body (square-ish)
+    ctx.beginPath();ctx.roundRect(-h*0.22,-h*0.75,h*0.44,h*0.52,6);ctx.fill();
+    // Head
+    ctx.fillStyle='#f0c000';
+    ctx.beginPath();ctx.roundRect(-h*0.18,-h*0.95,h*0.36,h*0.24,8);ctx.fill();
+    // Eyes
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-h*0.07,-h*0.86,h*0.055,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(h*0.07,-h*0.86,h*0.055,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#1a1a80';ctx.beginPath();ctx.arc(-h*0.065,-h*0.855,h*0.03,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(h*0.075,-h*0.855,h*0.03,0,Math.PI*2);ctx.fill();
+    // Big smile
+    ctx.strokeStyle='#8B4513';ctx.lineWidth=3;ctx.lineCap='round';
+    ctx.beginPath();ctx.arc(0,-h*0.81,h*0.11,0.2,Math.PI-0.2);ctx.stroke();
+    // Clapping arms
+    const armOff=cl*15;
+    ctx.strokeStyle='#f0c000';ctx.lineWidth=h*0.1;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(-h*0.22,-h*0.6);ctx.lineTo(-h*0.1-armOff,-h*0.4-armOff*0.3);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(h*0.22,-h*0.6);ctx.lineTo(h*0.1+armOff,-h*0.4-armOff*0.3);ctx.stroke();
+    // Pants
+    ctx.fillStyle='#b8860b';ctx.beginPath();ctx.roundRect(-h*0.22,-h*0.25,h*0.44,h*0.28,4);ctx.fill();
+    // Legs
+    ctx.fillStyle='#c8a000';
+    ctx.beginPath();ctx.roundRect(-h*0.18,0,h*0.15,h*0.07,3);ctx.fill();
+    ctx.beginPath();ctx.roundRect(h*0.03,0,h*0.15,h*0.07,3);ctx.fill();
+  }
+
+  function _drawGennady(ctx,h,t2){
+    // Superhero pose figure
+    ctx.fillStyle='rgba(40,40,120,0.9)';
+    // Cape
+    ctx.fillStyle='rgba(160,0,0,0.8)';
+    ctx.beginPath();ctx.moveTo(-h*0.15,-h*0.65);ctx.lineTo(-h*0.35,0);ctx.lineTo(h*0.1,0);ctx.closePath();ctx.fill();
+    // Body
+    ctx.fillStyle='rgba(40,60,140,0.9)';ctx.beginPath();ctx.roundRect(-h*0.22,-h*0.75,h*0.44,h*0.5,5);ctx.fill();
+    // Head
+    ctx.fillStyle='rgba(210,170,130,1)';ctx.beginPath();ctx.arc(0,-h*0.86,h*0.14,0,Math.PI*2);ctx.fill();
+    // Hair
+    ctx.fillStyle='rgba(60,40,20,1)';ctx.beginPath();ctx.arc(0,-h*0.94,h*0.11,Math.PI,0);ctx.fill();
+    // Eyes
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-h*0.06,-h*0.87,h*0.038,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(h*0.06,-h*0.87,h*0.038,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#334';ctx.beginPath();ctx.arc(-h*0.058,-h*0.868,h*0.02,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(h*0.062,-h*0.868,h*0.02,0,Math.PI*2);ctx.fill();
+    // Arms — superhero pose
+    ctx.strokeStyle='rgba(40,60,140,0.9)';ctx.lineWidth=h*0.12;ctx.lineCap='round';
+    if(t2<45){// superhero arms up
+      ctx.beginPath();ctx.moveTo(-h*0.22,-h*0.65);ctx.lineTo(-h*0.4,-h*0.82);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(h*0.22,-h*0.65);ctx.lineTo(h*0.4,-h*0.82);ctx.stroke();
+    } else {// wave/dance
+      ctx.beginPath();ctx.moveTo(-h*0.22,-h*0.65);ctx.lineTo(-h*0.38,-h*0.5+Math.sin(t2*3)*h*0.1);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(h*0.22,-h*0.65);ctx.lineTo(h*0.38,-h*0.5+Math.sin(t2*3+1)*h*0.1);ctx.stroke();
+    }
+    // Newspaper in hand 1:30-1:50
+    if(t2>=90&&t2<110){
+      ctx.fillStyle='rgba(220,210,180,0.9)';
+      ctx.beginPath();ctx.roundRect(h*0.38,-h*0.55,h*0.25,h*0.18,2);ctx.fill();
+      ctx.strokeStyle='#333';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(h*0.41,-h*0.52);ctx.lineTo(h*0.6,-h*0.52);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(h*0.41,-h*0.48);ctx.lineTo(h*0.6,-h*0.48);ctx.stroke();
+    }
+    // Energo can 1:50+
+    if(t2>=110){
+      const g=(Math.sin(t2*4)+1)*0.5;
+      ctx.fillStyle=`rgba(0,${Math.floor(180+g*75)},140,0.95)`;
+      ctx.beginPath();ctx.roundRect(h*0.38,-h*0.62,h*0.14,h*0.25,4);ctx.fill();
+      ctx.fillStyle='rgba(0,255,200,0.8)';ctx.font=`bold ${Math.floor(h*0.14)}px Arial`;ctx.textAlign='center';
+      ctx.fillText('⚡',h*0.45,-h*0.43);
+    }
+    // Legs
+    ctx.fillStyle='rgba(40,60,140,0.9)';
+    ctx.beginPath();ctx.roundRect(-h*0.18,-h*0.26,h*0.16,h*0.28,3);ctx.fill();
+    ctx.beginPath();ctx.roundRect(h*0.02,-h*0.26,h*0.16,h*0.28,3);ctx.fill();
+    // Shoes
+    ctx.fillStyle='rgba(20,20,20,0.9)';
+    ctx.beginPath();ctx.roundRect(-h*0.22,0,h*0.2,h*0.06,3);ctx.fill();
+    ctx.beginPath();ctx.roundRect(h*0.02,0,h*0.2,h*0.06,3);ctx.fill();
+  }
+
+  let lastT=performance.now();
+  function credLoop(ts){
+    const dt=Math.min((ts-lastT)/1000,0.05);lastT=ts;
+    credT+=dt;
+    drawBg(credT);
+    drawChars(credT);
+    // Scroll text upwards
+    scrollY-=scrollSpeed*dt;
+    scrollEl.style.top=scrollY+'px';
+    // Check if song ended (~155s) or all text scrolled off
+    const textBottom=scrollY+scrollEl.scrollHeight;
+    if(credT<SONG_DURATION&&textBottom>-100){
+      requestAnimationFrame(credLoop);
+    } else {
+      // Finale: freeze, show "МИШКАН ВЕЗДЕ"
+      music.pause();
+      screen.style.display='none';
+      scrollEl.innerHTML='';
+      const endEl=document.getElementById('credits-ending');
+      const endTxt=document.getElementById('credits-ending-text');
+      endEl.style.display='flex';
+      // Glitch in text
+      setTimeout(()=>{endTxt.style.opacity='1';},300);
+      setTimeout(()=>{
+        endEl.style.display='none';
+        if(cb)cb();
+      },4000);
+    }
+  }
+  requestAnimationFrame(credLoop);
 }
 </script>
 </body>
