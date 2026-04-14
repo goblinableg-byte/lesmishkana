@@ -184,7 +184,7 @@ function tickMishkan(gs){
     return null;
   }
   // Catch only when truly close
-  if(cd<0.75&&!closest.caught){closest.caught=true;return{event:'caught',id:closest.id};}
+  if(cd<1.1&&!closest.caught){closest.caught=true;return{event:'caught',id:closest.id};}
   const escMult=m.escapeRunning?8.0:1.0;
   smartMove(m,closest.x,closest.z,spd*(cd<5?1.1:1.0)*escMult,map);
   m.stuckT+=dt;
@@ -249,6 +249,12 @@ function startLoop(code){
     if(gs.escapeActive&&gs.escapeStart){const el=(Date.now()-gs.escapeStart)/1000;if(el>101){gs.players.forEach(p=>{if(!p.caught&&p.z>3){p.caught=true;bcast(code,{type:'player_caught',playerId:p.id});}});gs.phase='escape_ended';}}
     if(gs.escapeActive&&gs.phase==='playing'){const escaped=gs.players.filter(p=>!p.caught&&p.z<3);if(escaped.length>0&&!gs.gameWonSent){gs.gameWonSent=true;gs.phase='won';bcast(code,{type:'game_won'});}}
     if(gs.prePhaseDone&&gs.players.length>0&&gs.players.every(p=>p.caught)&&gs.phase==='playing'){gs.phase='lost';bcast(code,{type:'game_lost'});}
+    // Broadcast full game state every tick for movement sync
+    bcast(code,{type:'game_state',
+      mishkan:{x:gs.mishkan.x,z:gs.mishkan.z,angle:gs.mishkan.angle,banished:gs.mishkan.banished,phase:gs.mishkan.phase},
+      players:gs.players.map(p=>({id:p.id,x:p.x,z:p.z,angle:p.angle,caught:p.caught,hp:p.hp,hidingLockerId:p.hidingLockerId})),
+      items:gs.items,allPagesCollected:gs.allPagesCollected
+    });
   },50);
 }
 
