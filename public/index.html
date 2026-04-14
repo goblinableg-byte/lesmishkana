@@ -1534,6 +1534,16 @@ function hMsg(msg){
       break;
     case 'game_won':if(G.gameReady)endGame(true);break;
     case 'game_lost':if(G.gameReady)endGame(false);break;
+    case 'corr_state':
+      // Применяем реальные серверные позиции к другим игрокам в коридоре
+      if(msg.players&&PRE.otherCorrPlayers){
+        msg.players.forEach(sp=>{
+          if(sp.id===myId)return;
+          const op=PRE.otherCorrPlayers.find(o=>o.id===sp.id);
+          if(op){op._tx=sp.x;op._tz=sp.z;if(sp.arrived&&!op.arrived){op.arrived=true;PRE.corrArrivedSet.add(op.id);checkAllCorrArrived();}}
+        });
+      }
+      break;
   }
 }
 
@@ -2689,12 +2699,16 @@ function startCorridorPhase(){
       }
     }
 
-    // Авто-двигаем других игроков к входу детерминированно
+    // Плавно интерполируем позиции других игроков к серверным координатам (lerp)
     PRE.otherCorrPlayers.forEach(op=>{
-      if(op.arrived)return;
-      op.z=Math.max(3.5,op.z-2.8*dt);
-      if(op.z<4.5){op.arrived=true;PRE.corrArrivedSet.add(op.id);checkAllCorrArrived();}
+      if(op._tx!==undefined){op.x+=(op._tx-op.x)*0.15;op.z+=(op._tz-op.z)*0.15;}
+      if(op.z<4.5&&!op.arrived){op.arrived=true;PRE.corrArrivedSet.add(op.id);checkAllCorrArrived();}
     });
+    // Отправляем свою позицию серверу ~20 раз в секунду
+    if(!PRE._corrSendT||ts-PRE._corrSendT>50){
+      PRE._corrSendT=ts;
+      send({type:'corr_move',x:PRE.corrP.x,z:PRE.corrP.z,arrived:PRE.corrArrived});
+    }
 
     renderCorridorWithPlayers(cv,PRE.corrP,PRE.corrMap,PRE.otherCorrPlayers);
   }
