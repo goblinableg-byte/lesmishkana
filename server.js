@@ -33,6 +33,74 @@ function genMap(){
   return map;
 }
 
+// === HOUSE FLOOR MAPS ===
+// Floor 1: entrance hall with stairs up (to floor2) and locked basement door
+// Floor 2: 4 rooms connected by a hallway, stairs back down, random key in one room
+// Basement: dark 9x9, central phone, stairs up
+
+function genFloor1Map(){
+  // 20x20 house floorplan
+  const W=20,H=20,map=[];
+  for(let z=0;z<H;z++)map.push(new Array(W).fill(1));
+  // Main hall
+  for(let z=2;z<18;z++)for(let x=2;x<18;x++)map[z][x]=0;
+  // Interior wall dividers to make rooms feel distinct
+  // Room divider horizontal at z=9
+  for(let x=2;x<14;x++)map[9][x]=1;
+  map[9][7]=0; // doorway
+  // Room divider vertical at x=10 (top half)
+  for(let z=2;z<9;z++)map[z][10]=1;
+  map[5][10]=0; // doorway top
+  // Room divider vertical at x=10 (bottom half)
+  for(let z=9;z<18;z++)map[z][10]=1;
+  map[13][10]=0; // doorway bottom
+  // Stairs up at top-right area (x=15,z=3) — marker tile stays open
+  // Basement door at bottom-center (x=9,z=16) — stays open but locked logically
+  return map;
+}
+
+function genFloor2Map(){
+  // 28x20 multi-room attic
+  const W=28,H=20,map=[];
+  for(let z=0;z<H;z++)map.push(new Array(W).fill(1));
+  // Central hallway z=8..11, x=2..26
+  for(let z=7;z<13;z++)for(let x=2;x<26;x++)map[z][x]=0;
+  // Room A (top-left): x=2..8, z=2..6
+  for(let z=2;z<7;z++)for(let x=2;x<9;x++)map[z][x]=0;
+  map[7][5]=0; // door to hallway
+  // Room B (top-right): x=10..16, z=2..6
+  for(let z=2;z<7;z++)for(let x=10;x<17;x++)map[z][x]=0;
+  map[7][13]=0;
+  // Room C (far-right top): x=18..25, z=2..6
+  for(let z=2;z<7;z++)for(let x=18;x<26;x++)map[z][x]=0;
+  map[7][22]=0;
+  // Room D (bottom-center): x=8..18, z=14..18
+  for(let z=14;z<19;z++)for(let x=8;x<19;x++)map[z][x]=0;
+  map[12][13]=0; // door to hallway
+  // Stairs down at x=3,z=9 (center of hallway left)
+  return map;
+}
+
+function genBasementMap(){
+  // 13x13 dark basement
+  const W=13,H=13,map=[];
+  for(let z=0;z<H;z++)map.push(new Array(W).fill(1));
+  // Main room
+  for(let z=2;z<11;z++)for(let x=2;x<11;x++)map[z][x]=0;
+  // Stairs up marker at x=3,z=9
+  return map;
+}
+
+// Pick which floor2 room gets the secret key (0=RoomA,1=RoomB,2=RoomC,3=RoomD)
+function pickKeyRoom(){return Math.floor(Math.random()*4);}
+// Key positions for each room
+const FLOOR2_KEY_POS=[
+  {x:5.5,z:4.5},  // Room A
+  {x:13.5,z:4.5}, // Room B
+  {x:22.5,z:4.5}, // Room C
+  {x:13.5,z:16.5} // Room D
+];
+
 function genCorridorMap(){
   const W=64,H=500,map=[];
   for(let z=0;z<H;z++)map.push(new Array(W).fill(1));
@@ -252,9 +320,20 @@ function startLoop(code){
     // Broadcast full game state every tick for movement sync
     bcast(code,{type:'game_state',
       mishkan:{x:gs.mishkan.x,z:gs.mishkan.z,angle:gs.mishkan.angle,banished:gs.mishkan.banished,phase:gs.mishkan.phase},
-      players:gs.players.map(p=>({id:p.id,x:p.x,z:p.z,angle:p.angle,caught:p.caught,hp:p.hp,hidingLockerId:p.hidingLockerId})),
-      items:gs.items,allPagesCollected:gs.allPagesCollected
+      players:gs.players.map(p=>({id:p.id,x:p.x,z:p.z,angle:p.angle,caught:p.caught,hp:p.hp,hidingLockerId:p.hidingLockerId,floor:p.floor||'forest',hasSecretKey:p.hasSecretKey})),
+      items:gs.items,allPagesCollected:gs.allPagesCollected,
+      phoneRinging:gs.secretState?.phoneRinging,
+      // Phone distance per player: send individually below
     });
+    // Send phone volume per player based on basement distance
+    if(gs.secretState?.phoneRinging&&gs.house){
+      gs.players.forEach(p=>{
+        if(p.floor!=='basement')return;
+        const dist=Math.sqrt((p.x-gs.house.phone.x)**2+(p.z-gs.house.phone.z)**2);
+        const ws2=lobbies[code].players.find(lp=>lp.id===p.id)?.ws;
+        if(ws2&&ws2.readyState===WebSocket.OPEN)ws2.send(JSON.stringify({type:'phone_volume',dist}));
+      });
+    }
   },50);
 }
 
@@ -264,10 +343,21 @@ wss.on('connection',ws=>{
     let msg;try{msg=JSON.parse(raw);}catch{return;}
     if(msg.type==='create_lobby'){
       const code=genCode(),map=genMap(),items=makeItems(map);
-      lobbies[code]={players:[],gameState:{phase:'lobby',map,items,mishkan:newMishkan(),players:[],allPagesCollected:false,escapeActive:false,altarCharges:0}};
+      const keyRoom=pickKeyRoom();
+      const houseData={
+        floor1Map:genFloor1Map(),floor2Map:genFloor2Map(),basementMap:genBasementMap(),
+        keyRoom,
+        // Special positions
+        stairsUp:{x:15.5,z:3.5},     // floor1 -> floor2
+        stairsDown2:{x:3.5,z:9.5},   // floor2 -> floor1
+        basementDoor:{x:9.5,z:16.5}, // floor1 -> basement (locked until hasSecretKey)
+        stairsBasement:{x:3.5,z:9.5},// basement -> floor1
+        phone:{x:6.5,z:6.5},         // phone in basement
+      };
+      lobbies[code]={players:[],gameState:{phase:'lobby',map,items,mishkan:newMishkan(),players:[],allPagesCollected:false,escapeActive:false,altarCharges:0,house:houseData,secretState:{phoneRinging:false,readyHidden:false,gennadyChosen:false,ending:false}}};
       pCode=code;pId='p1';const colors=['#ff6b6b','#4ecdc4','#ffe66d','#a8e6cf'];
       lobbies[code].players.push({ws,id:'p1',name:msg.name||'Игрок 1',isHost:true,color:colors[0]});
-      lobbies[code].gameState.players.push({id:'p1',name:msg.name||'Игрок 1',x:SPAWNS[0].x,z:SPAWNS[0].z,angle:0,caught:false,hp:100,color:colors[0],stamina:100,hidingLockerId:null,lockerMinigameActive:false,lockerEnterTime:null,atAltar:false,altarT:0});
+      lobbies[code].gameState.players.push({id:'p1',name:msg.name||'Игрок 1',x:SPAWNS[0].x,z:SPAWNS[0].z,angle:0,caught:false,hp:100,color:colors[0],stamina:100,hidingLockerId:null,lockerMinigameActive:false,lockerEnterTime:null,atAltar:false,altarT:0,floor:'forest',hasSecretKey:false});
       sendTo(ws,{type:'lobby_created',code,playerId:'p1',isHost:true});
       sendTo(ws,{type:'lobby_update',players:lobbies[code].players.map(p=>({id:p.id,name:p.name,color:p.color}))});
     }
@@ -279,12 +369,12 @@ wss.on('connection',ws=>{
       pCode=code;const idx=lobbies[code].players.length;pId='p'+(idx+1);
       const colors=['#ff6b6b','#4ecdc4','#ffe66d','#a8e6cf'];const sp=SPAWNS[idx];
       lobbies[code].players.push({ws,id:pId,name:msg.name||'Игрок '+(idx+1),isHost:false,color:colors[idx]});
-      lobbies[code].gameState.players.push({id:pId,name:msg.name||'Игрок '+(idx+1),x:sp.x,z:sp.z,angle:0,caught:false,hp:100,color:colors[idx],stamina:100,hidingLockerId:null,lockerMinigameActive:false,lockerEnterTime:null,atAltar:false,altarT:0});
+      lobbies[code].gameState.players.push({id:pId,name:msg.name||'Игрок '+(idx+1),x:sp.x,z:sp.z,angle:0,caught:false,hp:100,color:colors[idx],stamina:100,hidingLockerId:null,lockerMinigameActive:false,lockerEnterTime:null,atAltar:false,altarT:0,floor:'forest',hasSecretKey:false});
       sendTo(ws,{type:'joined_lobby',code,playerId:pId,isHost:false,players:lobbies[code].players.map(p=>({id:p.id,name:p.name,color:p.color}))});
       bcast(code,{type:'lobby_update',players:lobbies[code].players.map(p=>({id:p.id,name:p.name,color:p.color}))});
     }
     else if(msg.type==='player_ready'){if(!pCode||!lobbies[pCode])return;const lb=lobbies[pCode];if(!lb.readySet)lb.readySet=new Set();lb.readySet.add(pId);bcast(pCode,{type:'player_ready_ack',readyIds:[...lb.readySet]});}
-    else if(msg.type==='start_game'){if(!pCode||!lobbies[pCode])return;const lb=lobbies[pCode],host=lb.players.find(p=>p.id===pId);if(!host?.isHost)return;lb.gameState.phase='playing';bcast(pCode,{type:'game_start',map:lb.gameState.map,items:lb.gameState.items,players:lb.gameState.players.map(p=>({id:p.id,name:p.name,x:p.x,z:p.z,color:p.color}))});startLoop(pCode);}
+    else if(msg.type==='start_game'){if(!pCode||!lobbies[pCode])return;const lb=lobbies[pCode],host=lb.players.find(p=>p.id===pId);if(!host?.isHost)return;lb.gameState.phase='playing';bcast(pCode,{type:'game_start',map:lb.gameState.map,items:lb.gameState.items,players:lb.gameState.players.map(p=>({id:p.id,name:p.name,x:p.x,z:p.z,color:p.color})),house:lb.gameState.house});startLoop(pCode);}
     else if(msg.type==='game_ready'){if(!pCode||!lobbies[pCode])return;const gs=lobbies[pCode].gameState;if(gs)gs.prePhaseDone=true;}
     else if(msg.type==='player_move'){
       if(!pCode||!lobbies[pCode])return;
@@ -292,6 +382,7 @@ wss.on('connection',ws=>{
       if(!pl||pl.caught)return;
       if(!pl.hidingLockerId){
         pl.x=msg.x;pl.z=msg.z;pl.angle=msg.angle;
+        if(msg.floor)pl.floor=msg.floor;
         if(msg.sprint&&pl.stamina>0)pl.stamina=Math.max(0,pl.stamina-0.5);
         else if(!msg.sprint)pl.stamina=Math.min(100,pl.stamina+0.2);
         if(msg.sprint&&gs.mishkan.hearingEnabled){
@@ -300,6 +391,72 @@ wss.on('connection',ws=>{
         }
       }
       if(msg.interact&&!pl.hidingLockerId){
+        const house=gs.house;
+        // Floor transition interactions
+        if(pl.floor==='floor1'&&house){
+          const dStairsUp=Math.sqrt((pl.x-house.stairsUp.x)**2+(pl.z-house.stairsUp.z)**2);
+          if(dStairsUp<1.5){
+            pl.floor='floor2';pl.x=house.stairsDown2.x+1;pl.z=house.stairsDown2.z;
+            const ws2=lobbies[pCode].players.find(lp=>lp.id===pId)?.ws;
+            if(ws2)sendTo(ws2,{type:'floor_change',floor:'floor2',x:pl.x,z:pl.z});
+          }
+          const dBasement=Math.sqrt((pl.x-house.basementDoor.x)**2+(pl.z-house.basementDoor.z)**2);
+          if(dBasement<1.5){
+            if(pl.hasSecretKey){
+              pl.floor='basement';pl.x=house.stairsBasement.x;pl.z=house.stairsBasement.z-1;
+              const ws2=lobbies[pCode].players.find(lp=>lp.id===pId)?.ws;
+              if(ws2)sendTo(ws2,{type:'floor_change',floor:'basement',x:pl.x,z:pl.z});
+              // Start phone ringing for everyone
+              if(!gs.secretState.phoneRinging){
+                gs.secretState.phoneRinging=true;
+                bcast(pCode,{type:'phone_start'});
+              }
+            } else {
+              const ws2=lobbies[pCode].players.find(lp=>lp.id===pId)?.ws;
+              if(ws2)sendTo(ws2,{type:'basement_locked'});
+            }
+          }
+        }
+        if(pl.floor==='floor2'&&house){
+          const dStairsDown=Math.sqrt((pl.x-house.stairsDown2.x)**2+(pl.z-house.stairsDown2.z)**2);
+          if(dStairsDown<1.5){
+            pl.floor='floor1';pl.x=house.stairsUp.x-1;pl.z=house.stairsUp.z;
+            const ws2=lobbies[pCode].players.find(lp=>lp.id===pId)?.ws;
+            if(ws2)sendTo(ws2,{type:'floor_change',floor:'floor1',x:pl.x,z:pl.z});
+          }
+          // Secret key pickup on floor2
+          const kp=FLOOR2_KEY_POS[house.keyRoom];
+          const dKey=Math.sqrt((pl.x-kp.x)**2+(pl.z-kp.z)**2);
+          if(dKey<1.3&&!gs.secretState.keyCollected&&!pl.hasSecretKey){
+            gs.secretState.keyCollected=true;pl.hasSecretKey=true;
+            const ws2=lobbies[pCode].players.find(lp=>lp.id===pId)?.ws;
+            if(ws2)sendTo(ws2,{type:'secret_key_found'});
+          }
+        }
+        if(pl.floor==='basement'&&house){
+          const dStairsUp2=Math.sqrt((pl.x-house.stairsBasement.x)**2+(pl.z-house.stairsBasement.z)**2);
+          if(dStairsUp2<1.5){
+            pl.floor='floor1';pl.x=house.basementDoor.x;pl.z=house.basementDoor.z-1;
+            const ws2=lobbies[pCode].players.find(lp=>lp.id===pId)?.ws;
+            if(ws2)sendTo(ws2,{type:'floor_change',floor:'floor1',x:pl.x,z:pl.z});
+          }
+          // Phone interaction
+          const dPhone=Math.sqrt((pl.x-house.phone.x)**2+(pl.z-house.phone.z)**2);
+          if(dPhone<1.5&&gs.secretState.phoneRinging){
+            const ws2=lobbies[pCode].players.find(lp=>lp.id===pId)?.ws;
+            if(ws2)sendTo(ws2,{type:'phone_interact'});
+          }
+        }
+        // House entry: player in forest near house portal
+        if(pl.floor==='forest'){
+          // House door is at forest map coords ~(7,2)
+          const dHouse=Math.sqrt((pl.x-7)**2+(pl.z-2)**2);
+          if(dHouse<2.0){
+            pl.floor='floor1';pl.x=9.5;pl.z=15.0;
+            const ws2=lobbies[pCode].players.find(lp=>lp.id===pId)?.ws;
+            if(ws2)sendTo(ws2,{type:'floor_change',floor:'floor1',x:pl.x,z:pl.z});
+          }
+        }
         gs.items.forEach(item=>{
           if(item.type==='altar'){const d=Math.sqrt((pl.x-item.x)**2+(pl.z-item.z)**2);if(d<2.5&&!gs.allPagesCollected)pl.atAltar=true;return;}
           if(item.type!=='locker'&&item.collected)return;
@@ -322,6 +479,18 @@ wss.on('connection',ws=>{
       if(msg.interact&&pl.hidingLockerId){
         const enterCooldown=!pl.lockerEnterTime||(Date.now()-pl.lockerEnterTime)>800;
         if(!pl.lockerMinigameActive&&enterCooldown){pl.hidingLockerId=null;pl.lockerEnterTime=null;const ws2=lobbies[pCode].players.find(lp=>lp.id===pId)?.ws;if(ws2)sendTo(ws2,{type:'locker_exited'});}
+      }
+    }
+    else if(msg.type==='gennady_choice'){
+      if(!pCode||!lobbies[pCode])return;
+      const gs=lobbies[pCode].gameState;
+      if(msg.accept){
+        gs.secretState.ending=true;
+        bcast(pCode,{type:'gennady_ending'});
+      } else {
+        // Restore ready buttons
+        gs.secretState.readyHidden=false;
+        bcast(pCode,{type:'ready_restored'});
       }
     }
     else if(msg.type==='locker_minigame_fail'){if(!pCode||!lobbies[pCode])return;const gs=lobbies[pCode].gameState;const pl=gs.players.find(p=>p.id===pId);if(!pl||!pl.hidingLockerId)return;pl.hidingLockerId=null;pl.lockerMinigameActive=false;pl.caught=true;bcast(pCode,{type:'player_caught',playerId:pId,fromLocker:true,lockerScream:true});}
