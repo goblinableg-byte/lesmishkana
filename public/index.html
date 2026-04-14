@@ -7,7 +7,7 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Creepster&family=VT323&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:#000;overflow:hidden;width:100vw;height:100vh;font-family:'VT323',monospace;color:#c8d8b0;user-select:none;-webkit-user-select:none;}
+body{background:#000;overflow:hidden;width:100vw;height:100vh;font-family:'VT323',monospace;color:#c8d8b0;user-select:none;-webkit-user-select:none;overscroll-behavior:none;touch-action:none;}
 @keyframes catchShake{0%{transform:translate(0,0);}10%{transform:translate(-12px,8px) rotate(-1.5deg);}20%{transform:translate(12px,-8px) rotate(1.5deg);}50%{transform:translate(-4px,3px);}100%{transform:translate(0,0);}}
 #screen-game.shake{animation:catchShake 0.6s ease-out;}
 .screen{display:none;width:100%;height:100%;position:fixed;top:0;left:0;z-index:1;}
@@ -161,8 +161,8 @@ input.inp:focus{border-color:#ff3030;}
 </div>
 
 <!-- CAR CUTSCENE -->
-<div id="screen-car" class="screen" style="background:#000;overflow:hidden;">
-  <canvas id="car-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;"></canvas>
+<div id="screen-car" class="screen" style="background:#000;overflow:hidden;touch-action:none;">
+  <canvas id="car-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;touch-action:none;"></canvas>
   <div id="car-dialog" style="position:absolute;bottom:60px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.82);border:2px solid #2a4a2a;border-radius:10px;padding:12px 22px;max-width:85vw;text-align:center;font-size:1.2rem;color:#c8d8b0;letter-spacing:1px;display:none;"></div>
 </div>
 
@@ -178,8 +178,8 @@ input.inp:focus{border-color:#ff3030;}
 </div>
 
 <!-- BOBIK CUTSCENE -->
-<div id="screen-bobik-cs" class="screen" style="background:#000;overflow:hidden;">
-  <canvas id="bobik-cs-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;"></canvas>
+<div id="screen-bobik-cs" class="screen" style="background:#000;overflow:hidden;touch-action:none;">
+  <canvas id="bobik-cs-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;touch-action:none;"></canvas>
   <div id="bobik-dialog" style="position:absolute;bottom:60px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);border:2px solid #2a4a2a;border-radius:10px;padding:12px 22px;max-width:88vw;text-align:center;font-size:1.15rem;color:#c8d8b0;letter-spacing:1px;display:none;"></div>
 </div>
 
@@ -651,6 +651,10 @@ function iAU(){
   AU.bobWalk=new Audio('https://www.image2url.com/r2/default/files/1776018775862-7b71dc7d-c876-4105-b1c5-76081d726650.mp3');AU.bobWalk.loop=true;AU.bobWalk.volume=0.7;
   // Сердцебиение — для мини-игры в шкафчике
   AU.heartbeat=new Audio('https://image2url.com/r2/default/files/1775932358232-5f38fb59-f1ba-4f52-a6bd-c7ae7b777c91.mp3');AU.heartbeat.loop=true;AU.heartbeat.volume=0.85;
+  // Dialog voice sounds (8-bit style)
+  AU.voicePlayer1=new Audio('https://www.image2url.com/r2/default/files/1776159170109-9234156c-d7c5-4ddd-8bc4-aea5b8e0ca19.mp3');AU.voicePlayer1.volume=0.7;
+  AU.voicePlayer2=new Audio('https://www.image2url.com/r2/default/files/1776159283529-dbe33aae-991e-462d-9800-cd5809553293.mp3');AU.voicePlayer2.volume=0.7;
+  AU.voiceBobik=new Audio('https://www.image2url.com/r2/default/files/1776159254295-d144a820-1e38-46b9-acea-0cb3a2b82baf.mp3');AU.voiceBobik.volume=0.7;
   // Звук открытия двери шкафа (катсцена провала)
   AU.lockerDoor=new Audio('https://image2url.com/r2/default/files/1775932724319-919b3923-75b4-4265-a22d-998c45675b12.mp3');AU.lockerDoor.volume=1.0;
   // Скример при провале мини-игры
@@ -989,8 +993,21 @@ function hMsg(msg){
       showPhase1Room();break;
     case 'game_state':
       if(!G.gameReady)break;
-      G.M=msg.mishkan;
-      msg.players.forEach(p=>{if(!G.players[p.id])return;if(p.id===myId){G.players[p.id].caught=p.caught;G.players[p.id].hp=p.hp;}else Object.assign(G.players[p.id],p);});
+      // Update mishkan with smooth lerp
+      if(msg.mishkan){const lf=0.25;G.M.x+=(msg.mishkan.x-G.M.x)*lf;G.M.z+=(msg.mishkan.z-G.M.z)*lf;G.M.angle=msg.mishkan.angle;G.M.banished=msg.mishkan.banished;G.M.phase=msg.mishkan.phase;}
+      msg.players.forEach(p=>{
+        if(!G.players[p.id])return;
+        if(p.id===myId){G.players[p.id].caught=p.caught;G.players[p.id].hp=p.hp;}
+        else{
+          // Smooth interpolation for other players
+          const lf=0.3;
+          G.players[p.id].x+=(p.x-G.players[p.id].x)*lf;
+          G.players[p.id].z+=(p.z-G.players[p.id].z)*lf;
+          G.players[p.id].angle=p.angle;
+          G.players[p.id].caught=p.caught;G.players[p.id].hp=p.hp;
+          G.players[p.id].hidingLockerId=p.hidingLockerId;
+        }
+      });
       G.items=msg.items;G.allP=msg.allPagesCollected||false;
       uHUD();if(G.players[myId])G.myP=G.players[myId];uMFX();break;
     case 'pages_all_collected':
@@ -1456,8 +1473,8 @@ function iCtrl(){
 
   // Touch drag (мобильные)
   const camPtrs=new Map();
-  CAM_ZONE.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;const el=document.elementFromPoint(e.clientX,e.clientY);if(el&&el.closest('#ctrl'))return;CAM_ZONE.setPointerCapture(e.pointerId);camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:true});
-  CAM_ZONE.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')return;if(!camPtrs.has(e.pointerId)||G.dis||G.inLocker)return;const prev=camPtrs.get(e.pointerId);G.camY+=(e.clientX-prev.x)*0.008;G.camP-=(e.clientY-prev.y)*0.004;G.camP=Math.max(-.5,Math.min(.5,G.camP));camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:true});
+  CAM_ZONE.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;const el=document.elementFromPoint(e.clientX,e.clientY);if(el&&el.closest('#ctrl'))return;CAM_ZONE.setPointerCapture(e.pointerId);camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:false});
+  CAM_ZONE.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')return;if(!camPtrs.has(e.pointerId)||G.dis||G.inLocker)return;const prev=camPtrs.get(e.pointerId);G.camY+=(e.clientX-prev.x)*0.008;G.camP-=(e.clientY-prev.y)*0.004;G.camP=Math.max(-.5,Math.min(.5,G.camP));camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:false});
   CAM_ZONE.addEventListener('pointerup',e=>{camPtrs.delete(e.pointerId);},{passive:true});
   CAM_ZONE.addEventListener('pointercancel',e=>{camPtrs.delete(e.pointerId);},{passive:true});
 
@@ -1953,7 +1970,7 @@ function setupRoomControls(rc){
   // Touch / pointer drag (для мобильных — не мышь)
   const camPtrs=new Map();
   rc.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;if(document.elementFromPoint(e.clientX,e.clientY)?.closest('#room-ui'))return;rc.setPointerCapture(e.pointerId);camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:true});
-  rc.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')return;if(!camPtrs.has(e.pointerId))return;const prev=camPtrs.get(e.pointerId);RP.camY+=(e.clientX-prev.x)*0.008;RP.camP=Math.max(-.5,Math.min(.5,RP.camP-(e.clientY-prev.y)*0.004));camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:true});
+  rc.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')return;if(!camPtrs.has(e.pointerId))return;const prev=camPtrs.get(e.pointerId);RP.camY+=(e.clientX-prev.x)*0.008;RP.camP=Math.max(-.5,Math.min(.5,RP.camP-(e.clientY-prev.y)*0.004));camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:false});
   rc.addEventListener('pointerup',e=>camPtrs.delete(e.pointerId),{passive:true});
   rc.addEventListener('pointercancel',e=>camPtrs.delete(e.pointerId),{passive:true});
   // Клавиатура
@@ -2040,12 +2057,17 @@ function checkAllReady(){
 // ─── CAR CUTSCENE ───
 function runCarCutscene(){
   if(roomLId){cancelAnimationFrame(roomLId);roomLId=null;}
+  // Block ALL touchmove during cutscene to prevent scroll-based acceleration
+  const _blockTouch=e=>e.preventDefault();
+  document.addEventListener('touchmove',_blockTouch,{passive:false});
+  document.addEventListener('touchstart',_blockTouch,{passive:false});
   showScreen('screen-car');
   const cv = document.getElementById('car-canvas');
   cv.width = window.innerWidth; cv.height = window.innerHeight;
   const ctx = cv.getContext('2d');
   let tp = 0, running = true;
   let shakeX = 0, shakeY = 0;
+  const _carStartTime = Date.now();
   const players = PRE.allPlayers;
   const pNames = players.map(p=>p.name);
   function pName(i){ return pNames[i % pNames.length]; }
@@ -2074,9 +2096,15 @@ function runCarCutscene(){
   for(let i=0;i<22;i++){treeOffsets.push({lane:Math.random()<0.5?-1:1,x:Math.random(),spd:0.7+Math.random()*0.5});}
   let treeScroll = 0;
 
+  // Block touch scroll from accelerating cutscene
+  cv.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+  cv.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
+  let _lastCarTs=null;
   function draw(ts){
     if(!running)return;
-    tp += 0.016;treeScroll += 0.016;
+    // Use wall-clock time to prevent acceleration from any source
+    tp = (Date.now() - _carStartTime) / 1000;
+    treeScroll = tp * 0.8;
     const W=cv.width,H=cv.height;
     ctx.save();
     if(shakeX||shakeY)ctx.translate(shakeX*(Math.random()-.5)*2,shakeY*(Math.random()-.5)*2);
@@ -2103,9 +2131,14 @@ function runCarCutscene(){
     const vg=ctx.createRadialGradient(W/2,H*0.5,H*0.2,W/2,H*0.5,H*0.85);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.75)');ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
     ctx.restore();
     if(schIdx<schedule.length && tp>=schedule[schIdx].at){
-      const sc=schedule[schIdx];dlEl.style.display='block';dlEl.style.color=sc.color||'#c8d8b0';dlEl.textContent=sc.text;schIdx++;clearTimeout(dlTO);dlTO=setTimeout(()=>{dlEl.style.display='none';},4800);
+      const sc=schedule[schIdx];dlEl.style.display='block';dlEl.style.color=sc.color||'#c8d8b0';
+      // Typewriter effect for car dialog
+      if(window._carTypeIv)clearInterval(window._carTypeIv);
+      if(window.AU&&AU.voicePlayer1){const av=Math.random()<0.5?AU.voicePlayer1:AU.voicePlayer2;if(window._carVoiceIv)clearInterval(window._carVoiceIv);function cpv(){av.currentTime=0;av.play().catch(()=>{});}cpv();window._carVoiceIv=setInterval(cpv,600);}
+      let _ci=0,_ct=sc.text;dlEl.textContent='';window._carTypeIv=setInterval(()=>{if(_ci>=_ct.length){clearInterval(window._carTypeIv);dlEl.textContent=_ct;clearInterval(window._carVoiceIv);if(window.AU&&AU.voicePlayer1){AU.voicePlayer1.pause();AU.voicePlayer2.pause();}return;}dlEl.textContent=_ct.slice(0,++_ci);},35);
+      schIdx++;clearTimeout(dlTO);dlTO=setTimeout(()=>{dlEl.style.display='none';clearInterval(window._carTypeIv);clearInterval(window._carVoiceIv);if(window.AU){AU.voicePlayer1?.pause();AU.voicePlayer2?.pause();}},4800);
     }
-    if(tp>=25){running=false;PAU.ambient.pause();dlEl.style.display='none';let fAlpha=0;function fadeOut(){fAlpha+=0.04;ctx.fillStyle=`rgba(0,0,0,${fAlpha})`;ctx.fillRect(0,0,cv.width,cv.height);if(fAlpha<1)requestAnimationFrame(fadeOut);else runPhase2Corridor();}requestAnimationFrame(fadeOut);return;}
+    if(tp>=25){running=false;PAU.ambient.pause();dlEl.style.display='none';clearInterval(window._carTypeIv);clearInterval(window._carVoiceIv);if(window.AU){AU.voicePlayer1?.pause();AU.voicePlayer2?.pause();}document.removeEventListener('touchmove',_blockTouch);document.removeEventListener('touchstart',_blockTouch);let fAlpha=0;function fadeOut(){fAlpha+=0.04;ctx.fillStyle=`rgba(0,0,0,${fAlpha})`;ctx.fillRect(0,0,cv.width,cv.height);if(fAlpha<1)requestAnimationFrame(fadeOut);else runPhase2Corridor();}requestAnimationFrame(fadeOut);return;}
     requestAnimationFrame(draw);
   }
   requestAnimationFrame(draw);
@@ -2142,6 +2175,7 @@ function startCorridorPhase(){
   PRE.corrP = {x:10, z:75, camY:0, camP:0};
   PRE.corrArrived = false;PRE.corrAllArrived = false;
   PRE.corrArrivedSet = new Set(); // кто уже пришёл
+  PRE.corrStartTime = Date.now(); // for sync timing
   const cv=document.getElementById('corr-canvas');
   cv.width=window.innerWidth;cv.height=window.innerHeight;
   setupCorridorControls();
@@ -2186,11 +2220,11 @@ function startCorridorPhase(){
       }
     }
 
-    // Авто-двигаем других игроков к входу (имитация)
+    // Авто-двигаем других игроков к входу детерминированно
     PRE.otherCorrPlayers.forEach(op=>{
       if(op.arrived)return;
-      op.z=Math.max(4,op.z-2.5*dt);
-      if(op.z<5){op.arrived=true;PRE.corrArrivedSet.add(op.id);checkAllCorrArrived();}
+      op.z=Math.max(3.5,op.z-2.8*dt);
+      if(op.z<4.5){op.arrived=true;PRE.corrArrivedSet.add(op.id);checkAllCorrArrived();}
     });
 
     renderCorridorWithPlayers(cv,PRE.corrP,PRE.corrMap,PRE.otherCorrPlayers);
@@ -2205,10 +2239,14 @@ function checkAllCorrArrived(){
     arrived>=total?t('corrArrived'):`${arrived}/${total} ${t('corrArrived')}`;
   if(arrived>=total&&!PRE.corrAllArrived){
     PRE.corrAllArrived=true;
+    // Fixed delay so all clients trigger at same relative time
     setTimeout(()=>{
       if(PRE.corrLId){cancelAnimationFrame(PRE.corrLId);PRE.corrLId=null;}
-      runBobikCutscene();
-    },800);
+      // All clients start bobik cutscene at the same wall-clock offset from corridor start
+      const elapsed=Date.now()-PRE.corrStartTime;
+      const syncDelay=Math.max(0,8000-elapsed); // Always start bobik at 8s from corridor start
+      setTimeout(()=>runBobikCutscene(),syncDelay);
+    },200);
   }
 }
 
@@ -2283,8 +2321,8 @@ function setupCorridorControls(){
   });
   // Touch drag
   const camPtrs=new Map();
-  cc.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;const el=document.elementFromPoint(e.clientX,e.clientY);if(el&&el.closest('#ctrl2'))return;cc.setPointerCapture(e.pointerId);camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:true});
-  cc.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')return;if(!camPtrs.has(e.pointerId))return;const prev=camPtrs.get(e.pointerId);PRE.corrP.camY+=(e.clientX-prev.x)*0.008;PRE.corrP.camP=Math.max(-.5,Math.min(.5,(PRE.corrP.camP||0)-(e.clientY-prev.y)*0.004));camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:true});
+  cc.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;const el=document.elementFromPoint(e.clientX,e.clientY);if(el&&el.closest('#ctrl2'))return;cc.setPointerCapture(e.pointerId);camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:false});
+  cc.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')return;if(!camPtrs.has(e.pointerId))return;const prev=camPtrs.get(e.pointerId);PRE.corrP.camY+=(e.clientX-prev.x)*0.008;PRE.corrP.camP=Math.max(-.5,Math.min(.5,(PRE.corrP.camP||0)-(e.clientY-prev.y)*0.004));camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY});},{passive:false});
   cc.addEventListener('pointerup',e=>{camPtrs.delete(e.pointerId);},{passive:true});
   cc.addEventListener('pointercancel',e=>{camPtrs.delete(e.pointerId);},{passive:true});
 
@@ -2307,6 +2345,9 @@ function setupCorridorControls(){
 
 // ─── BOBIK CUTSCENE ───
 function runBobikCutscene(){
+  const _blockTouchB=e=>e.preventDefault();
+  document.addEventListener('touchmove',_blockTouchB,{passive:false});
+  document.addEventListener('touchstart',_blockTouchB,{passive:false});
   showScreen('screen-bobik-cs');
   const cv=document.getElementById('bobik-cs-canvas');
   cv.width=window.innerWidth;cv.height=window.innerHeight;
@@ -2317,22 +2358,53 @@ function runBobikCutscene(){
 
   let bobX=cv.width+150, bobTargX=cv.width*0.55;
   let tp=0;
+  const _bobStartTime=Date.now();
 
-  function showDlg(text, color, duration, cb){dlEl.style.display='block';dlEl.style.color=color||'#c8d8b0';dlEl.style.opacity='0';dlEl.style.transition='opacity 0.3s';dlEl.innerHTML=text;setTimeout(()=>dlEl.style.opacity='1',20);if(cb)setTimeout(()=>{dlEl.style.opacity='0';setTimeout(()=>{dlEl.style.display='none';setTimeout(cb,200);},300);},duration);}
-  function hideDlg(cb){dlEl.style.display='none';if(cb)setTimeout(cb,300);}
+  let _dlgVoiceIv=null;
+  function _startVoice(isBobik){
+    _stopVoice();
+    if(!window.AU)return;
+    const au=isBobik?AU.voiceBobik:(Math.random()<0.5?AU.voicePlayer1:AU.voicePlayer2);
+    if(!au)return;
+    function playLoop(){au.currentTime=0;au.play().catch(()=>{});}
+    playLoop();
+    _dlgVoiceIv=setInterval(playLoop, 600);
+  }
+  function _stopVoice(){clearInterval(_dlgVoiceIv);_dlgVoiceIv=null;if(window.AU){[AU.voicePlayer1,AU.voicePlayer2,AU.voiceBobik].forEach(a=>{if(a){a.pause();a.currentTime=0;}})}}
+  function _typeText(el,html,speed,onDone){
+    // Strip HTML tags to get plain text, then type it
+    const tmp=document.createElement('div');tmp.innerHTML=html;
+    const plain=tmp.textContent;
+    let i=0;el.textContent='';
+    const iv=setInterval(()=>{
+      if(i>=plain.length){clearInterval(iv);el.innerHTML=html;_stopVoice();if(onDone)onDone();return;}
+      el.textContent=plain.slice(0,++i);
+    },speed||35);
+    return iv;
+  }
+  let _typeIv=null;
+  function showDlg(text, color, duration, cb, isBobik){
+    clearInterval(_typeIv);
+    dlEl.style.display='block';dlEl.style.color=color||'#c8d8b0';dlEl.style.opacity='0';dlEl.style.transition='opacity 0.3s';
+    setTimeout(()=>{dlEl.style.opacity='1';},20);
+    _startVoice(isBobik);
+    _typeIv=_typeText(dlEl, text, 40, ()=>{});
+    if(cb)setTimeout(()=>{_stopVoice();clearInterval(_typeIv);dlEl.style.opacity='0';setTimeout(()=>{dlEl.style.display='none';setTimeout(cb,200);},300);},duration);
+  }
+  function hideDlg(cb){_stopVoice();clearInterval(_typeIv);dlEl.style.display='none';if(cb)setTimeout(cb,300);}
 
   const allNames = players.map(p=>p.name).join(', ');
   const dialogs=[
-    {delay:1200, text:t('bobD0'), dur:3800, col:'#a0ffa0'},
-    {delay:500,  text:t('bobD1', pName(0)), dur:3200, col:'#c8d8b0'},
-    {delay:400,  text:t('bobD2'), dur:3200, col:'#a0ffa0', moveForward:true},
-    {delay:400,  text:t('bobD3', pName(1)), dur:4800, col:'#c8d8b0'},
-    {delay:400,  text:t('bobD4'), dur:3000, col:'#a0ffa0'},
-    {delay:400,  text:t('bobD5', allNames), dur:2000, col:'#ffe08a'},
-    {delay:300,  text:t('bobD6'), dur:3500, col:'#a0ffa0', moveBack:true},
-    {delay:200,  text:`<span style="color:#ff3030;font-size:1.25rem;font-weight:bold">${t('bobD7')}</span>`, dur:4500, col:'#ff3030'},
-    {delay:300,  text:t('bobD8'), dur:4000, col:'#a0ffa0'},
-    {delay:400,  text:t('bobD9', pName(0)), dur:2500, col:'#c8d8b0'},
+    {delay:1200, text:t('bobD0'), dur:3800, col:'#a0ffa0', bob:true},
+    {delay:500,  text:t('bobD1', pName(0)), dur:3200, col:'#c8d8b0', bob:false},
+    {delay:400,  text:t('bobD2'), dur:3200, col:'#a0ffa0', moveForward:true, bob:true},
+    {delay:400,  text:t('bobD3', pName(1)), dur:4800, col:'#c8d8b0', bob:false},
+    {delay:400,  text:t('bobD4'), dur:3000, col:'#a0ffa0', bob:true},
+    {delay:400,  text:t('bobD5', allNames), dur:2000, col:'#ffe08a', bob:false},
+    {delay:300,  text:t('bobD6'), dur:3500, col:'#a0ffa0', moveBack:true, bob:true},
+    {delay:200,  text:`<span style="color:#ff3030;font-size:1.25rem;font-weight:bold">${t('bobD7')}</span>`, dur:4500, col:'#ff3030', bob:true},
+    {delay:300,  text:t('bobD8'), dur:4000, col:'#a0ffa0', bob:true},
+    {delay:400,  text:t('bobD9', pName(0)), dur:2500, col:'#c8d8b0', bob:false},
   ];
   let dIdx=0;
   function runNext(){
@@ -2340,13 +2412,15 @@ function runBobikCutscene(){
     const d=dialogs[dIdx++];
     if(d.moveForward){bobTargX=cv.width*0.45;}
     if(d.moveBack){bobTargX=cv.width*0.68;}
-    setTimeout(()=>showDlg(d.text,d.col,d.dur,runNext),d.delay);
+    setTimeout(()=>showDlg(d.text,d.col,d.dur,runNext,d.bob),d.delay);
   }
   setTimeout(runNext,600);
 
+  cv.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+  cv.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
   let animId;
   function draw(){
-    animId=requestAnimationFrame(draw);tp+=0.016;
+    animId=requestAnimationFrame(draw);tp=(Date.now()-_bobStartTime)/1000;
     const W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
     const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#010601');bg.addColorStop(1,'#000');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
     for(let i=0;i<12;i++){const tx=(i/12)*W+(i%2?0:W*0.04);const th=H*(0.4+((i*37)%30)/100);const tw=W*0.05;ctx.fillStyle=`rgb(${4+(i%3)*2},${12+(i%4)*3},${4+(i%3)*2})`;ctx.beginPath();ctx.moveTo(tx,H*0.9);ctx.lineTo(tx-tw/2,H*0.9-th*0.3);ctx.lineTo(tx-tw,H*0.9-th*0.5);ctx.lineTo(tx-tw*0.6,H*0.9-th*0.5);ctx.lineTo(tx-tw*0.8,H*0.9-th*0.8);ctx.lineTo(tx-tw*0.3,H*0.9-th*0.75);ctx.lineTo(tx,H*0.9-th);ctx.lineTo(tx+tw*0.3,H*0.9-th*0.75);ctx.lineTo(tx+tw*0.8,H*0.9-th*0.8);ctx.lineTo(tx+tw*0.6,H*0.9-th*0.5);ctx.lineTo(tx+tw,H*0.9-th*0.5);ctx.lineTo(tx+tw/2,H*0.9-th*0.3);ctx.closePath();ctx.fill();}
@@ -2361,7 +2435,7 @@ function runBobikCutscene(){
     const vg=ctx.createRadialGradient(W/2,H/2,H*.2,W/2,H/2,H*.82);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.72)');ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
   }
   requestAnimationFrame(draw);
-  window._bobikCleanup=()=>{if(animId)cancelAnimationFrame(animId);};
+  window._bobikCleanup=()=>{if(animId)cancelAnimationFrame(animId);document.removeEventListener('touchmove',_blockTouchB);document.removeEventListener('touchstart',_blockTouchB);};
 }
 
 // ─── TUTORIAL ───
