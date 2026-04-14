@@ -376,6 +376,17 @@ wss.on('connection',ws=>{
     else if(msg.type==='player_ready'){if(!pCode||!lobbies[pCode])return;const lb=lobbies[pCode];if(!lb.readySet)lb.readySet=new Set();lb.readySet.add(pId);bcast(pCode,{type:'player_ready_ack',readyIds:[...lb.readySet]});}
     else if(msg.type==='start_game'){if(!pCode||!lobbies[pCode])return;const lb=lobbies[pCode],host=lb.players.find(p=>p.id===pId);if(!host?.isHost)return;lb.gameState.phase='playing';bcast(pCode,{type:'game_start',map:lb.gameState.map,items:lb.gameState.items,players:lb.gameState.players.map(p=>({id:p.id,name:p.name,x:p.x,z:p.z,color:p.color})),house:lb.gameState.house});startLoop(pCode);}
     else if(msg.type==='game_ready'){if(!pCode||!lobbies[pCode])return;const gs=lobbies[pCode].gameState;if(gs)gs.prePhaseDone=true;}
+    else if(msg.type==='corr_move'){
+      // Получаем реальную позицию игрока в коридоре и рассылаем всем остальным
+      const lb=lobbies[pCode];if(!lb)return;
+      if(!lb.corrPlayers)lb.corrPlayers={};
+      lb.corrPlayers[pId]={id:pId,x:msg.x,z:msg.z,arrived:!!msg.arrived};
+      const players=Object.values(lb.corrPlayers);
+      // Рассылаем всем игрокам в лобби (кроме отправителя)
+      lb.players.forEach(lp=>{
+        if(lp.id!==pId&&lp.ws.readyState===1)sendTo(lp.ws,{type:'corr_state',players});
+      });
+    }
     else if(msg.type==='player_move'){
       if(!pCode||!lobbies[pCode])return;
       const gs=lobbies[pCode].gameState,pl=gs.players.find(p=>p.id===pId);
