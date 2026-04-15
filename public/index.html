@@ -106,18 +106,18 @@ input.inp:focus{border-color:#ff3030;}
 #locker-bg-blur{position:absolute;inset:0;background:rgba(0,0,10,0.0);}
 #locker-inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:18px;width:280px;}
 #locker-title{font-family:'Creepster',cursive;font-size:1.6rem;color:#8888ff;text-shadow:0 0 15px #4444ff88;letter-spacing:2px;text-align:center;}
-#locker-beat-zone{position:relative;width:160px;height:160px;display:flex;align-items:center;justify-content:center;}
-#locker-heart-btn{width:130px;height:130px;border-radius:50%;border:5px solid #cc2244;background:radial-gradient(circle at 40% 35%,#ff4466,#880022);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:4rem;transition:transform 0.06s;box-shadow:0 0 28px #ff004488;-webkit-tap-highlight-color:transparent;touch-action:none;}
+#locker-beat-zone{position:relative;width:220px;height:220px;display:flex;align-items:center;justify-content:center;}
+#locker-heart-btn{width:190px;height:190px;border-radius:50%;border:5px solid #cc2244;background:radial-gradient(circle at 40% 35%,#ff4466,#880022);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:5.5rem;transition:transform 0.06s;box-shadow:0 0 28px #ff004488;-webkit-tap-highlight-color:transparent;touch-action:none;}
 #locker-heart-btn:active,#locker-heart-btn.pressed{transform:scale(0.82);box-shadow:0 0 40px #ff0066cc;}
 #locker-ripple{position:absolute;width:130px;height:130px;border-radius:50%;border:3px solid #ff4466;opacity:0;pointer-events:none;transform:scale(1);}
 @keyframes rippleOut{0%{transform:scale(1);opacity:0.7;}100%{transform:scale(2.2);opacity:0;}}
 .ripple-anim{animation:rippleOut 0.6s ease-out forwards;}
-#locker-bar-wrap{width:300px;position:relative;}
-#locker-bar-track{width:100%;height:18px;background:#111;border:2px solid #333;border-radius:9px;overflow:visible;position:relative;}
+#locker-bar-wrap{width:420px;max-width:90vw;position:relative;}
+#locker-bar-track{width:100%;height:22px;background:#111;border:2px solid #333;border-radius:11px;overflow:visible;position:relative;}
 #locker-bar-fill{height:100%;background:linear-gradient(90deg,#002288,#4466ff);border-radius:7px;transition:width 0.05s;width:50%;}
-#locker-beat-marker{position:absolute;top:-6px;width:8px;height:30px;background:#ff4488;border-radius:4px;transform:translateX(-50%);transition:left 0.05s;}
-#locker-beat-window{position:absolute;top:-4px;height:26px;background:rgba(100,255,100,0.25);border:2px solid #44ff44;border-radius:4px;pointer-events:none;}
-#locker-timer-bar{width:300px;height:10px;background:#1a0008;border-radius:4px;overflow:hidden;border:1px solid #440011;}
+#locker-beat-marker{position:absolute;top:-6px;width:10px;height:40px;background:#ff4488;border-radius:4px;transform:translateX(-50%);transition:left 0.05s;}
+#locker-beat-window{position:absolute;top:-4px;height:36px;background:rgba(100,255,100,0.25);border:2px solid #44ff44;border-radius:4px;pointer-events:none;}
+#locker-timer-bar{width:420px;height:16px;background:#1a0008;border-radius:6px;overflow:hidden;border:1px solid #440011;max-width:90vw;}
 #locker-timer-fill{height:100%;background:linear-gradient(90deg,#ff0033,#ff6600);border-radius:4px;transition:width 0.1s;width:100%;}
 #locker-feedback{font-family:'VT323',monospace;font-size:1.4rem;color:#44ff44;letter-spacing:2px;min-height:1.6rem;text-align:center;transition:color 0.2s;}
 #locker-miss-overlay{position:fixed;inset:0;background:rgba(255,0,0,0);pointer-events:none;z-index:49;transition:background 0.1s;}
@@ -696,7 +696,7 @@ const FLOOR2_KEY_POS_CLIENT=[
 
 // Phone ringing state
 let phoneAudioCtx=null,phoneGainNode=null,phoneOscillator=null;
-G.phoneRinging=false;
+let _phoneRingingPending=false; // initialized after G is declared
 
 function startPhoneRinging(){
   G.phoneRinging=true;
@@ -950,7 +950,9 @@ function uLobby(pl){const el=document.getElementById('lobby-players');el.innerHT
 // ══ STATE ══
 const G={map:null,MS:64,items:[],altarCharges:0,players:{},M:{x:22,z:16,angle:0,banished:false},myP:null,caught:false,stamina:100,sprint:false,adr:false,adrT:0,keys:{u:false,d:false,l:false,r:false},jX:0,jZ:0,interact:false,pages:0,allP:false,exitH:false,camY:Math.PI,camP:0,bT:0,bAmt:0,sT:0,sX:0,sY:0,dis:false,escA:false,escP2:false,fO:[],stun:false,stunT:0,hasCr:false,crU:false,crA:0,mBan:false,mBanT:0,mRise:0,monIv:null,fallIv:null,gameReady:false,inLocker:false,lockerMgActive:false,interactCooldown:0,
   // House system
-  house:null,currentFloor:'forest',houseMap:null};
+  house:null,currentFloor:'forest',houseMap:null,
+  // Phone
+  phoneRinging:false};
 
 // INVENTORY
 const INV={slots:[null,null,null,null],active:0};
@@ -1672,7 +1674,7 @@ function useCross(){
 }
 
 // ══ LOCKER MINIGAME ══
-let LMG={active:false,timer:0,maxTimer:13,beatPos:0,beatDir:1,beatSpeed:0.85,windowL:0.38,windowW:0.24,misses:0,maxMisses:3,lastBeatTime:0,heartInterval:null,timerInterval:null,failed:false,lastRaf:0};
+let LMG={active:false,timer:0,maxTimer:13,beatPos:0,beatDir:1,beatSpeed:0.38,windowL:0.38,windowW:0.24,misses:0,maxMisses:3,lastBeatTime:0,heartInterval:null,timerInterval:null,failed:false,lastRaf:0};
 
 function startLockerMg(){
   if(LMG.active)return;
@@ -1702,8 +1704,8 @@ function startLockerMg(){
   function lmgRaf(ts){
     if(!LMG.active)return;
     const dt=Math.min((ts-LMG.lastRafT)/1000,0.05);LMG.lastRafT=ts;
-    const speed=LMG.beatSpeed+(LMG.misses*0.18);
-    LMG.beatPos+=LMG.beatDir*(speed*dt*3.5);
+    const speed=LMG.beatSpeed+(LMG.misses*0.07);
+    LMG.beatPos+=LMG.beatDir*(speed*dt*1.8);
     if(LMG.beatPos>=0.92){LMG.beatPos=0.92;LMG.beatDir=-1;}
     if(LMG.beatPos<=0.08){LMG.beatPos=0.08;LMG.beatDir=1;}
     const marker=document.getElementById('locker-beat-marker');
