@@ -321,9 +321,9 @@ function startLoop(code){
     bcast(code,{type:'game_state',
       mishkan:{x:gs.mishkan.x,z:gs.mishkan.z,angle:gs.mishkan.angle,banished:gs.mishkan.banished,phase:gs.mishkan.phase},
       players:gs.players.map(p=>({id:p.id,x:p.x,z:p.z,angle:p.angle,caught:p.caught,hp:p.hp,hidingLockerId:p.hidingLockerId,floor:p.floor||'forest',hasSecretKey:p.hasSecretKey})),
-      allPagesCollected:gs.allPagesCollected,
+      items:gs.items,allPagesCollected:gs.allPagesCollected,
       phoneRinging:gs.secretState?.phoneRinging,
-
+      // Phone distance per player: send individually below
     });
     // Send phone volume per player based on basement distance
     if(gs.secretState?.phoneRinging&&gs.house){
